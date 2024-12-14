@@ -1,4 +1,7 @@
-﻿using CogniCache.Services;
+﻿using Blazorise;
+using Blazorise.FluentUI2;
+using Blazorise.Icons.FluentUI;
+using CogniCache.Services;
 using CogniCache.Shared.Services;
 using Microsoft.Extensions.Logging;
 
@@ -20,6 +23,12 @@ namespace CogniCache
             builder.Services.AddSingleton<IFormFactor, FormFactor>();
 
             builder.Services.AddMauiBlazorWebView();
+
+            // Add Blazorise/FluentUI2
+            builder.Services
+            .AddBlazorise()
+            .AddFluentUI2Providers()
+            .AddFluentUIIcons();
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();
