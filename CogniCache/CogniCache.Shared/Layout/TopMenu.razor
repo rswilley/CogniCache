@@ -1,10 +1,9 @@
-﻿<Bar Breakpoint="Breakpoint.Desktop" Background="Background.White" Shadow="Shadow.Default" ThemeContrast="ThemeContrast.Light">
+﻿@using CogniCache.Shared.Components
+
+<Bar Breakpoint="Breakpoint.Desktop" Background="Background.White" Shadow="Shadow.Default" ThemeContrast="ThemeContrast.Light">
     <BarBrand>
         <BarItem>
-            <BarLink To="">
-                <BarIcon IconName="IconName.Dashboard" />
-                Blazorise Demo
-            </BarLink>
+            <Search/>
         </BarItem>
     </BarBrand>
     <BarToggler />

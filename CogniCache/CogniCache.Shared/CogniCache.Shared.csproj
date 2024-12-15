@@ -11,8 +11,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Blazorise.Components" Version="1.7.1" />
     <PackageReference Include="Blazorise.FluentUI2" Version="1.7.1" />
     <PackageReference Include="Blazorise.Icons.FluentUI" Version="1.7.1" />
+    <PackageReference Include="Blazorise.Markdown" Version="1.7.1" />
+    <PackageReference Include="Markdig" Version="0.38.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.0" />
   </ItemGroup>
 

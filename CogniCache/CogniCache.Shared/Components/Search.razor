@@ -1,0 +1,69 @@
+﻿<Autocomplete TItem="SearchResult"
+    TValue="int"
+    Data="@ReadDataSearchResults"
+    ReadData="@OnHandleReadData"
+    TextField="@(( item ) => item.Snippet)"
+    ValueField="@(( item ) => item.NoteId)"
+    @bind-SelectedValue="@selectedNoteId"
+    @bind-SelectedText="selectedAutoCompleteText"
+    Placeholder="Search..."
+    FreeTyping>
+    <NotFoundContent> Sorry... @context was not found! :( </NotFoundContent>
+    <ItemContent>
+        <Div Flex="Flex.InlineFlex.JustifyContent.Between" Width="Width.Is100">
+            <Heading Margin="Margin.Is2.FromBottom">@context.</Heading>
+            <Small>@context.Item.Title</Small>
+        </Div>
+        <Paragraph Margin="Margin.Is2.FromBottom">@context.Text</Paragraph>
+    </ItemContent>
+</Autocomplete>
+
+<Field Horizontal>
+    <FieldBody ColumnSize="ColumnSize.Is12">
+        Selected noteId: @selectedNoteId
+    </FieldBody>
+    <FieldBody ColumnSize="ColumnSize.Is12">
+        Selected text value: @selectedAutoCompleteText
+    </FieldBody>
+</Field>
+
+@code {
+    public IEnumerable<SearchResult> SearchResults;
+    public IEnumerable<SearchResult> ReadDataSearchResults;
+
+    private Random random = new();
+
+    public int selectedNoteId { get; set; }
+    public string selectedAutoCompleteText { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        SearchResults = new List<SearchResult> {
+            new() {
+                NoteId = 1,
+                Title = "Note #1",
+                Snippet = "This is a test note"
+            }
+        };
+        await base.OnInitializedAsync();
+    }
+
+    private async Task OnHandleReadData(AutocompleteReadDataEventArgs autocompleteReadDataEventArgs)
+    {
+        if (!autocompleteReadDataEventArgs.CancellationToken.IsCancellationRequested)
+        {
+            await Task.Delay(random.Next(100));
+            if (!autocompleteReadDataEventArgs.CancellationToken.IsCancellationRequested)
+            {
+                ReadDataSearchResults = SearchResults.Where(x => x.Snippet.StartsWith(autocompleteReadDataEventArgs.SearchValue, StringComparison.InvariantCultureIgnoreCase));
+            }
+        }
+    }
+
+    public class SearchResult
+    {
+        public int NoteId { get; set; }
+        public string Title { get; set; }
+        public string Snippet { get; set; }
+    }
+}
