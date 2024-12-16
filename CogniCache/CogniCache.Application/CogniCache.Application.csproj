@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CogniCache.Domain\CogniCache.Domain.csproj" />
+    <ProjectReference Include="..\CogniCache.Infrastructure\CogniCache.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

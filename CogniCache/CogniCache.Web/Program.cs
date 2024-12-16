@@ -1,6 +1,7 @@
 using Blazorise;
 using Blazorise.FluentUI2;
 using Blazorise.Icons.FluentUI;
+using CogniCache.DependencyResolver;
 using CogniCache.Shared.Services;
 using CogniCache.Web.Components;
 using CogniCache.Web.Services;
@@ -19,6 +20,10 @@ builder.Services
 
 // Add device-specific services used by the CogniCache.Shared project
 builder.Services.AddSingleton<IFormFactor, FormFactor>();
+
+builder.Services.AddApplication();
+builder.Services.AddDomain();
+builder.Services.AddInfrastructure();
 
 var app = builder.Build();
 

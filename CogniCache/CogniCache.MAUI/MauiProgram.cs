@@ -1,6 +1,7 @@
 ﻿using Blazorise;
 using Blazorise.FluentUI2;
 using Blazorise.Icons.FluentUI;
+using CogniCache.DependencyResolver;
 using CogniCache.Services;
 using CogniCache.Shared.Services;
 using Microsoft.Extensions.Logging;
@@ -21,6 +22,10 @@ namespace CogniCache
 
             // Add device-specific services used by the CogniCache.Shared project
             builder.Services.AddSingleton<IFormFactor, FormFactor>();
+
+            builder.Services.AddApplication();
+            builder.Services.AddDomain();
+            builder.Services.AddInfrastructure();
 
             builder.Services.AddMauiBlazorWebView();
 

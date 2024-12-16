@@ -9,6 +9,14 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CogniCache.Shared", "CogniC
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CogniCache.Web", "CogniCache\CogniCache.Web\CogniCache.Web.csproj", "{D4E6D980-29E8-4842-A90F-F3901209621A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CogniCache.Application", "CogniCache\CogniCache.Application\CogniCache.Application.csproj", "{3BF0BB86-3A07-4990-9338-BA402470E508}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CogniCache.Domain", "CogniCache\CogniCache.Domain\CogniCache.Domain.csproj", "{9B87AF62-5DF8-4A4C-9DF9-7517DC5612BA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CogniCache.Infrastructure", "CogniCache\CogniCache.Infrastructure\CogniCache.Infrastructure.csproj", "{4F09C680-4FC3-4290-8CB9-C5F155D08733}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CogniCache.DependencyResolver", "CogniCache.DependencyResolver\CogniCache.DependencyResolver.csproj", "{77BBAF53-FEC3-4263-B536-06DD95F92FF9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +35,22 @@ Global
 		{D4E6D980-29E8-4842-A90F-F3901209621A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D4E6D980-29E8-4842-A90F-F3901209621A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D4E6D980-29E8-4842-A90F-F3901209621A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3BF0BB86-3A07-4990-9338-BA402470E508}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3BF0BB86-3A07-4990-9338-BA402470E508}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3BF0BB86-3A07-4990-9338-BA402470E508}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3BF0BB86-3A07-4990-9338-BA402470E508}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9B87AF62-5DF8-4A4C-9DF9-7517DC5612BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9B87AF62-5DF8-4A4C-9DF9-7517DC5612BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9B87AF62-5DF8-4A4C-9DF9-7517DC5612BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9B87AF62-5DF8-4A4C-9DF9-7517DC5612BA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4F09C680-4FC3-4290-8CB9-C5F155D08733}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4F09C680-4FC3-4290-8CB9-C5F155D08733}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4F09C680-4FC3-4290-8CB9-C5F155D08733}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4F09C680-4FC3-4290-8CB9-C5F155D08733}.Release|Any CPU.Build.0 = Release|Any CPU
+		{77BBAF53-FEC3-4263-B536-06DD95F92FF9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{77BBAF53-FEC3-4263-B536-06DD95F92FF9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{77BBAF53-FEC3-4263-B536-06DD95F92FF9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{77BBAF53-FEC3-4263-B536-06DD95F92FF9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
