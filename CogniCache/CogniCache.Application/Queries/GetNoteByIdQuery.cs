@@ -1,4 +1,5 @@
 ﻿using CogniCache.Domain;
+using CogniCache.Domain.Models;
 using CogniCache.Domain.Repositories.NoteRepository;
 using CogniCache.Domain.Services;
 using System.Text.RegularExpressions;
@@ -22,16 +23,26 @@ public class GetNoteByIdQueryHandler : IRequest<GetNoteByIdQuery, GetNoteByIdQue
 
     public GetNoteByIdQueryResponse Handle(GetNoteByIdQuery request)
     {
-        var body = _noteRepository.GetById(request.NoteId).Body;
+        var note = _noteRepository.GetById(request.NoteId);
         var html = string.Empty;
 
         if (request.Mode == EditorMode.Preview)
         {
-            html = _renderService.ToHtml(body);
+            html = _renderService.ToHtml(note.Body);
             html = CreateInternalLinks(html);
         }
 
-        return new GetNoteByIdQueryResponse(body, html);
+        var noteModel = new NoteModel
+        {
+            Id = note.Id,
+            Body = note.Body,
+            Title = note.Title,
+            Html = html,
+            Tags = note.Tags,
+            LastUpdatedDate = note.LastUpdatedDate
+        };
+
+        return new GetNoteByIdQueryResponse(noteModel);
     }
 
     private string CreateInternalLinks(string html)
@@ -63,4 +74,4 @@ public class GetNoteByIdQueryHandler : IRequest<GetNoteByIdQuery, GetNoteByIdQue
     }
 }
 
-public record GetNoteByIdQueryResponse(string Body, string Html);
+public record GetNoteByIdQueryResponse(NoteModel Note);

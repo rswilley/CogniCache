@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CogniCache\CogniCache.Application\CogniCache.Application.csproj" />
+    <ProjectReference Include="..\CogniCache\CogniCache.Shared\CogniCache.Shared.csproj" />
   </ItemGroup>
 
 </Project>

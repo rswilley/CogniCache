@@ -1,4 +1,6 @@
 ﻿using CogniCache.Domain.Repositories.NoteRepository;
+using CogniCache.Domain.Repositories.TagRepository;
+using static Lucene.Net.Search.FieldCache;
 
 namespace CogniCache.Application.Queries
 {
@@ -7,76 +9,75 @@ namespace CogniCache.Application.Queries
     public class GetAllTagsQueryHandler : IRequest<GetAllTagsQuery, GetAllTagsQueryResponse>
     {
         private readonly INoteRepository _noteRepository;
+        private readonly ITagRepository _tagRepository;
 
-        public GetAllTagsQueryHandler(INoteRepository noteRepository)
+        public GetAllTagsQueryHandler(
+            INoteRepository noteRepository,
+            ITagRepository tagRepository)
         {
             _noteRepository = noteRepository;
+            _tagRepository = tagRepository;
         }
 
         public GetAllTagsQueryResponse Handle(GetAllTagsQuery request)
         {
-            var notes = _noteRepository.GetAll();
-            var tags = new Dictionary<string, TagListModel>();
-
-            foreach (var note in notes)
+            var allTags = _tagRepository.GetAll();
+            if (allTags.Count != 0)
             {
-                if (note.Tags.Count != 0)
-                {
-                    foreach (var tag in note.Tags)
-                    {
-                        if (tags.TryGetValue(tag, out TagListModel? value))
-                        {
-                            var model = value;
-                            model.NoteCount++;
-                            tags[tag] = model;
-                        }
-                        else
-                        {
-                            tags.Add(tag, new TagListModel
-                            {
-                                Tag = tag,
-                                NoteCount = 1,
-                                SortPriority = 1
-                            });
-                        }
-                    }
-                }
-                else
-                {
-                    if (tags.TryGetValue("Untagged", out TagListModel? value))
-                    {
-                        var model = value;
-                        model.NoteCount++;
-                        tags["Untagged"] = model;
+                return new GetAllTagsQueryResponse(allTags);
+            }
 
-                    }
-                    else
+            var tags = new List<Tag>();
+
+            foreach (var note in _noteRepository.GetAll())
+            {
+                foreach (var tag in note.Tags)
+                {
+                    var parts = tag.Split('/');
+                    Tag? parent = null;
+                    var path = "";
+
+                    for (int i = 0; parts.Length > i; i++)
                     {
-                        tags.Add("Untagged", new TagListModel
+                        var currentValue = parts[i];
+                        path += currentValue + "/";
+
+                        if (i == 0)
                         {
-                            Tag = "Untagged",
-                            NoteCount = 1,
-                            SortPriority = 0
-                        });
+                            parent = tags.SingleOrDefault(t => t.Name == currentValue);
+                            if (parent == null)
+                            {
+                                parent = new Tag
+                                {
+                                    Parent = parent,
+                                    Name = currentValue,
+                                    Path = path.TrimEnd('/')
+                                };
+                                tags.Add(parent);
+                            }
+                        } else
+                        {
+                            if (!parent!.Children.Select(c => c.Name).Contains(currentValue))
+                            {
+                                var children = parent.Children.ToList();
+                                var child = new Tag {
+                                    Parent = parent,
+                                    Name = currentValue,
+                                    Path = path.TrimEnd('/')
+                                };
+                                children.Add(child);
+                                parent.Children = children;
+
+                                parent = child;
+                            }
+                        }
                     }
                 }
             }
 
-            var sorted = tags
-                .OrderBy(t => t.Value.SortPriority)
-                .ThenBy(t => t.Key)
-                .ToDictionary(t => t.Key, t => t.Value);
-
-            return new GetAllTagsQueryResponse(sorted);
+            return new GetAllTagsQueryResponse(tags);
         }
     }
 
-    public record GetAllTagsQueryResponse(Dictionary<string, TagListModel> Tags);
-
-    public class TagListModel
-    {
-        public required string Tag { get; set; }
-        public int NoteCount { get; set; }
-        public int SortPriority { get; set; }
-    }
+    public record GetAllTagsQueryResponse(IEnumerable<Tag> Tags);
 }

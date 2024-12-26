@@ -1,0 +1,30 @@
+﻿@using CogniCache.Domain.Repositories.TagRepository
+@using CogniCache.Shared.Services
+
+@inject ILinkService _linkService
+
+@if (Tag.Children?.Any() == true)
+{
+    <BarDropdown IsOpen="false">
+        <BarDropdownToggle>
+            @Tag.Name
+        </BarDropdownToggle>
+        <BarDropdownMenu>
+            @foreach (var child in Tag.Children)
+            {
+                <ChildDropdownItem Tag="child" />
+            }
+        </BarDropdownMenu>
+    </BarDropdown>
+}
+else
+{
+    <BarDropdownItem To="@_linkService.CreateTagUrl(Tag.Name)">
+        @Tag.Name
+    </BarDropdownItem>
+}
+
+@code {
+    [Parameter]
+    public Tag Tag { get; set; }
+}

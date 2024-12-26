@@ -1,4 +1,5 @@
-﻿using CogniCache.Domain.Repositories.NoteRepository;
+﻿using CogniCache.Domain.Models;
+using CogniCache.Domain.Repositories.NoteRepository;
 
 namespace CogniCache.Application.Queries
 {
@@ -16,9 +17,17 @@ namespace CogniCache.Application.Queries
         public GetAllNotesQueryResponse Handle(GetAllNotesQuery request)
         {
             var notes = _noteRepository.GetAll().OrderByDescending(n => n.CreatedDate);
-            return new GetAllNotesQueryResponse(notes);
+            return new GetAllNotesQueryResponse(notes.Select(note => new NoteModel
+            {
+                Id = note.Id,
+                Title = note.Title,
+                Body = note.Body,
+                Html = string.Empty,
+                Tags = note.Tags,
+                LastUpdatedDate = note.LastUpdatedDate
+            }));
         }
     }
 
-    public record GetAllNotesQueryResponse(IEnumerable<Note> Notes);
+    public record GetAllNotesQueryResponse(IEnumerable<NoteModel> Notes);
 }

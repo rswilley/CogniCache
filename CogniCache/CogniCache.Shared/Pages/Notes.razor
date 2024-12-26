@@ -1,0 +1,109 @@
+﻿@page "/notes/{tagPath?}"
+@using CogniCache.Application
+@using CogniCache.Application.Queries
+@using CogniCache.Domain
+@using CogniCache.Domain.Models
+@using CogniCache.Domain.Repositories.NoteRepository
+@using CogniCache.Shared.Components
+
+@inject IRequest<GetAllNotesQuery, GetAllNotesQueryResponse> _getAllNotesQueryHandler
+@inject IRequest<GetNoteByIdQuery, GetNoteByIdQueryResponse> _getNoteByIdQueryHandler
+
+<Heading Size="HeadingSize.Is1" Margin="Margin.Is3.OnY">
+    Notes
+</Heading>
+
+@if (string.IsNullOrEmpty(TagPath) && FilteredNotes.Count() == 0) {
+    <Row>
+        <Column ColumnSize="ColumnSize.Is12">
+            <Alert Color="Color.Primary" Visible>
+                <AlertDescription>
+                    You have no notes. <a href="/">Compose</a> a note to get started.
+                </AlertDescription>
+            </Alert>
+        </Column>
+    </Row>
+
+} else {
+    <Row>
+        <Column ColumnSize="ColumnSize.Is3">
+            <Search />
+        </Column>
+        <Column ColumnSize="ColumnSize.Is9">
+            <Buttons Role="ButtonsRole.Toolbar">
+                <Buttons Margin="Margin.Is2.FromEnd">
+                    <Button Color="Color.Primary">Primary</Button>
+                    <Button Color="Color.Secondary">Secondary</Button>
+                    <Button Color="Color.Info">Info</Button>
+                </Buttons>
+                <Buttons>
+                    <Button Color="Color.Danger">Danger</Button>
+                    <Button Color="Color.Warning">Warning</Button>
+                </Buttons>
+                <Buttons Margin="Margin.Is2.OnX">
+                    <Button Color="Color.Success">Success</Button>
+                </Buttons>
+            </Buttons>
+        </Column>
+    </Row>
+    <Row>
+        <Column ColumnSize="ColumnSize.Is3">
+            @if (FilteredNotes.Count() > 0) {
+                <ListGroup Flush Mode="ListGroupMode.Selectable"
+                SelectedItemChanged="@(EventCallback.Factory.Create<string>(this, OnSelectedNoteChanged))">
+                    @foreach (var note in FilteredNotes)
+                    {
+                        <ListGroupItem Name="@note.Id.ToString()">
+                            <Div Flex="Flex.JustifyContent.Between" Width="Width.Is100">
+                                <Heading Size="HeadingSize.Is5" Margin="Margin.Is1.FromBottom">@note.Title</Heading>
+                                <Small>@note.LastUpdatedDate</Small>
+                            </Div>
+                            <Paragraph Margin="Margin.Is1.FromBottom">Some placeholder content in a paragraph.</Paragraph>
+                            <Small>@note.TagsAsString()</Small>
+                        </ListGroupItem>
+                    }
+                </ListGroup>
+            } else {
+                <Paragraph>There are no notes for tag: @TagPath</Paragraph>
+            }
+        </Column>
+        <Column ColumnSize="ColumnSize.Is9">
+            @if (EditorMode == EditorMode.Preview) {
+                @((MarkupString)SelectedNote.Html)
+            } else {
+                <Markdown Value="@SelectedNote?.Body" ValueChanged="@OnMarkdownValueChanged" />
+            }
+        </Column>
+    </Row>
+}
+
+@code {
+    [Parameter]
+    public string? TagPath { get; set; }
+
+    private IEnumerable<NoteModel> FilteredNotes = new List<NoteModel>();
+
+    private NoteModel SelectedNote { get; set; } = new() { Title = "Untitled", Body = "", Html = ""};
+    private EditorMode EditorMode = EditorMode.Preview;
+
+    protected override void OnInitialized()
+    {
+        if (string.IsNullOrEmpty(TagPath)) {
+            FilteredNotes = _getAllNotesQueryHandler.Handle(new GetAllNotesQuery()).Notes;
+        }
+    }
+
+    private Task OnSelectedNoteChanged(string selectedNoteId)
+    {
+        SelectedNote = _getNoteByIdQueryHandler.Handle(new GetNoteByIdQuery(Convert.ToInt32(selectedNoteId), EditorMode)).Note;
+        return Task.CompletedTask;
+    }
+
+    private Task OnMarkdownValueChanged(string value)
+    {
+        SelectedNote.Body = value;
+        SelectedNote.Html = Markdig.Markdown.ToHtml(SelectedNote.Body ?? string.Empty);
+
+        return Task.CompletedTask;
+    }
+}

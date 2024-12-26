@@ -21,6 +21,7 @@ builder.Services
 // Add device-specific services used by the CogniCache.Shared project
 builder.Services.AddSingleton<IFormFactor, FormFactor>();
 
+builder.Services.AddShared();
 builder.Services.AddApplication();
 builder.Services.AddDomain();
 builder.Services.AddInfrastructure();

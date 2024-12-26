@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CogniCache.Infrastructure",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CogniCache.DependencyResolver", "CogniCache.DependencyResolver\CogniCache.DependencyResolver.csproj", "{77BBAF53-FEC3-4263-B536-06DD95F92FF9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CogniCache.Application.UnitTests", "CogniCache\CogniCache.Application.UnitTests\CogniCache.Application.UnitTests.csproj", "{7C9A621D-EEF6-4CF9-A832-85E494854762}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +53,10 @@ Global
 		{77BBAF53-FEC3-4263-B536-06DD95F92FF9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{77BBAF53-FEC3-4263-B536-06DD95F92FF9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{77BBAF53-FEC3-4263-B536-06DD95F92FF9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7C9A621D-EEF6-4CF9-A832-85E494854762}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7C9A621D-EEF6-4CF9-A832-85E494854762}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7C9A621D-EEF6-4CF9-A832-85E494854762}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7C9A621D-EEF6-4CF9-A832-85E494854762}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
