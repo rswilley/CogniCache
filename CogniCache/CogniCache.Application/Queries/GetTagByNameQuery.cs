@@ -1,4 +1,6 @@
-﻿using CogniCache.Domain.Repositories.NoteRepository;
+﻿using CogniCache.Domain.Models;
+using CogniCache.Domain.Repositories.NoteRepository;
+using System.Net;
 
 namespace CogniCache.Application.Queries
 {
@@ -15,11 +17,23 @@ namespace CogniCache.Application.Queries
 
         public GetTagByNameQueryResponse Handle(GetTagByNameQuery request)
         {
-            var notes = _noteRepository.GetManyByTagName(request.Tag).OrderByDescending(n => n.LastUpdatedDate);
+            var tag = WebUtility.HtmlDecode(request.Tag);
+            var notes = _noteRepository
+                .GetManyByTagName(tag)
+                .OrderByDescending(n => n.LastUpdatedDate)
+                .Select(note => new NoteModel {
+                    Id = note.Id,
+                    Title = note.Title,
+                    Body = note.Body,
+                    Html = string.Empty,
+                    Tags = note.Tags,
+                    LastUpdatedDate = note.LastUpdatedDate
+                }
+            );
 
             return new GetTagByNameQueryResponse(notes);
         }
     }
 
-    public record GetTagByNameQueryResponse(IEnumerable<Note> Notes);
+    public record GetTagByNameQueryResponse(IEnumerable<NoteModel> Notes);
 }

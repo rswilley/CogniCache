@@ -1,69 +1,31 @@
-﻿<Autocomplete TItem="SearchResult"
-    TValue="int"
-    Data="@ReadDataSearchResults"
-    ReadData="@OnHandleReadData"
-    TextField="@(( item ) => item.Snippet)"
-    ValueField="@(( item ) => item.NoteId)"
-    @bind-SelectedValue="@selectedNoteId"
-    @bind-SelectedText="selectedAutoCompleteText"
-    Placeholder="Search..."
-    FreeTyping>
-    <NotFoundContent> Sorry... @context was not found! :( </NotFoundContent>
-    <ItemContent>
-        <Div Flex="Flex.InlineFlex.JustifyContent.Between" Width="Width.Is100">
-            <Heading Margin="Margin.Is2.FromBottom">@context.</Heading>
-            <Small>@context.Item.Title</Small>
-        </Div>
-        <Paragraph Margin="Margin.Is2.FromBottom">@context.Text</Paragraph>
-    </ItemContent>
-</Autocomplete>
+﻿@using CogniCache.Domain.Repositories.SearchRepository
+@inject ISearchRepository _searchRepository;
 
-<Field Horizontal>
-    <FieldBody ColumnSize="ColumnSize.Is12">
-        Selected noteId: @selectedNoteId
-    </FieldBody>
-    <FieldBody ColumnSize="ColumnSize.Is12">
-        Selected text value: @selectedAutoCompleteText
-    </FieldBody>
-</Field>
+<TextEdit Text="@_searchQuery" Placeholder="Search..." TextChanged="@OnSearchQueryChanged" />
 
 @code {
-    public IEnumerable<SearchResult> SearchResults;
-    public IEnumerable<SearchResult> ReadDataSearchResults;
+    [Parameter] 
+    public EventCallback<IEnumerable<SearchSnippet>> OnSearchSnippetsReceived { get; set; }
 
-    private Random random = new();
-
-    public int selectedNoteId { get; set; }
-    public string selectedAutoCompleteText { get; set; }
+    private string _searchQuery = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
-        SearchResults = new List<SearchResult> {
-            new() {
-                NoteId = 1,
-                Title = "Note #1",
-                Snippet = "This is a test note"
-            }
-        };
         await base.OnInitializedAsync();
     }
 
-    private async Task OnHandleReadData(AutocompleteReadDataEventArgs autocompleteReadDataEventArgs)
+    private async Task OnSearchQueryChanged(string searchQuery)
     {
-        if (!autocompleteReadDataEventArgs.CancellationToken.IsCancellationRequested)
-        {
-            await Task.Delay(random.Next(100));
-            if (!autocompleteReadDataEventArgs.CancellationToken.IsCancellationRequested)
-            {
-                ReadDataSearchResults = SearchResults.Where(x => x.Snippet.StartsWith(autocompleteReadDataEventArgs.SearchValue, StringComparison.InvariantCultureIgnoreCase));
-            }
-        }
-    }
+        _searchQuery = searchQuery;
 
-    public class SearchResult
-    {
-        public int NoteId { get; set; }
-        public string Title { get; set; }
-        public string Snippet { get; set; }
+        if (_searchQuery.Length > 0) {
+            var result = _searchRepository.Search(searchQuery);
+            if (result != null)
+            {
+                await OnSearchSnippetsReceived.InvokeAsync(result.Snippets);
+            }
+        } else {
+            await OnSearchSnippetsReceived.InvokeAsync(null);
+        }
     }
 }
