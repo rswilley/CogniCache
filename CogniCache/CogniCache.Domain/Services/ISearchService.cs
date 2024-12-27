@@ -1,5 +1,4 @@
 ﻿using CogniCache.Domain.Repositories.SearchRepository;
-using System.Text.RegularExpressions;
 
 namespace CogniCache.Domain.Services
 {
@@ -12,13 +11,16 @@ namespace CogniCache.Domain.Services
     {
         private readonly ISearchRepository _searchRepository;
         private readonly IRenderService _formatService;
+        private readonly INoteService _noteService;
 
         public SearchService(
             ISearchRepository searchRepository,
-            IRenderService formatService)
+            IRenderService formatService,
+            INoteService noteService)
         {
             _searchRepository = searchRepository;
             _formatService = formatService;
+            _noteService = noteService;
         }
 
         public IEnumerable<SearchResult> Search(string searchQuery)
@@ -30,35 +32,12 @@ namespace CogniCache.Domain.Services
                 {
                     NoteId = r.NoteId,
                     Title = r.Title,
-                    Snippet = RemoveTitle(_formatService.ToHtml(r.Snippet))
+                    Snippet = _noteService.RemoveTitle(_formatService.ToHtml(r.Snippet))
                 });
                 return searchResults;
             }
 
             return [];
-        }
-
-        private static string RemoveTitle(string input)
-        {
-            string pattern = @"<h1\b[^>]*>(.*?)<\/h1>";
-            string title = "";
-
-            Match match = Regex.Match(input, pattern);
-            if (match.Success)
-            {
-                title = match.Groups[1].Value;
-            }
-
-            if (string.IsNullOrEmpty(title))
-                return input;
-
-            return input.Replace(title, "");
-        }
-
-        private static string RemoveHtmlTags(string input)
-        {
-            string pattern = "<.*?>";
-            return Regex.Replace(input, pattern, string.Empty);
         }
     }
 }

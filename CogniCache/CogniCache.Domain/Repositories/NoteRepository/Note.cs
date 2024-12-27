@@ -1,4 +1,6 @@
-﻿namespace CogniCache.Domain.Repositories.NoteRepository
+﻿using CogniCache.Domain.Models;
+
+namespace CogniCache.Domain.Repositories.NoteRepository
 {
 
     public class Note : IDocument

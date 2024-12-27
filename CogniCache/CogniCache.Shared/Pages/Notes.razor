@@ -5,11 +5,10 @@
 @using CogniCache.Domain.Models
 @using CogniCache.Domain.Repositories.NoteRepository
 @using CogniCache.Domain.Repositories.SearchRepository
+@using CogniCache.Domain.Services
 @using CogniCache.Shared.Components
 
-@inject IRequest<GetAllNotesQuery, GetAllNotesQueryResponse> _getAllNotesQueryHandler
-@inject IRequest<GetNoteByIdQuery, GetNoteByIdQueryResponse> _getNoteByIdQueryHandler
-@inject IRequest<GetTagByNameQuery, GetTagByNameQueryResponse> _getNotesByTagQueryHandler
+@inject INoteService _noteService
 
 <Heading Size="HeadingSize.Is1" Margin="Margin.Is3.OnY">
     Notes
@@ -61,7 +60,7 @@
                             <Heading Size="HeadingSize.Is5" Margin="Margin.Is1.FromBottom">@note.Title</Heading>
                             <Small>@note.LastUpdatedDate</Small>
                         </Div>
-                        <Paragraph Margin="Margin.Is1.FromBottom">Some placeholder content in a paragraph.</Paragraph>
+                        <Paragraph Margin="Margin.Is1.FromBottom">@note.Snippet</Paragraph>
                         <Small>@note.TagsAsString()</Small>
                     </ListGroupItem>
                 }
@@ -84,7 +83,7 @@
     private IEnumerable<NoteModel> AllNotes = new List<NoteModel>();
     private IEnumerable<NoteModel> FilteredNotes = new List<NoteModel>();
 
-    private NoteModel SelectedNote { get; set; } = new() { Title = "Untitled", Body = "", Html = ""};
+    private NoteModel SelectedNote { get; set; } = new() { Title = "Untitled", Snippet = "", Body = "", Html = ""};
     private EditorMode EditorMode = EditorMode.Preview;
 
     protected override void OnInitialized()
@@ -99,18 +98,18 @@
     }
 
     private void LoadNotes() {
-        AllNotes = _getAllNotesQueryHandler.Handle(new GetAllNotesQuery()).Notes;
+        AllNotes = _noteService.GetAll();
         FilteredNotes = AllNotes;
 
         if (!string.IsNullOrEmpty(TagPath))
         {
-            FilteredNotes = _getNotesByTagQueryHandler.Handle(new GetTagByNameQuery(TagPath)).Notes;
+            FilteredNotes = _noteService.GetManyByTag(TagPath);
         }
     }
 
     private Task OnSelectedNoteChanged(string selectedNoteId)
     {
-        SelectedNote = _getNoteByIdQueryHandler.Handle(new GetNoteByIdQuery(Convert.ToInt32(selectedNoteId), EditorMode)).Note;
+        SelectedNote = _noteService.GetById(Convert.ToInt32(selectedNoteId));
         return Task.CompletedTask;
     }
 

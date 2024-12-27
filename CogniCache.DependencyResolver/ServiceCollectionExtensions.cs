@@ -25,10 +25,7 @@ namespace CogniCache.DependencyResolver
         public static IServiceCollection AddApplication(this IServiceCollection services)
         {
             // Application Use Cases
-            services.AddSingleton<IRequest<GetAllNotesQuery, GetAllNotesQueryResponse>, GetAllNotesQueryHandler>();
             services.AddSingleton<IRequest<GetAllTagsQuery, GetAllTagsQueryResponse>, GetAllTagsQueryHandler>();
-            services.AddSingleton<IRequest<GetTagByNameQuery, GetTagByNameQueryResponse>, GetTagByIdQueryHandler>();
-            services.AddSingleton<IRequest<GetNoteByIdQuery, GetNoteByIdQueryResponse>, GetNoteByIdQueryHandler>();
             services.AddSingleton<IRequest<SaveNoteCommand, SaveNoteCommandResponse>, SaveNoteCommandHandler>();
             services.AddSingleton<IRequest<DeleteNoteCommand, DeleteNoteCommandResponse>, DeleteNoteCommandHandler>();
 
@@ -38,6 +35,7 @@ namespace CogniCache.DependencyResolver
         public static IServiceCollection AddDomain(this IServiceCollection services) {
             // Domain
             services.AddSingleton(new AppState());
+            services.AddSingleton<INoteService, NoteService>();
             services.AddSingleton<ISearchService, SearchService>();
             services.AddSingleton<IIdService, IdService>();
 
