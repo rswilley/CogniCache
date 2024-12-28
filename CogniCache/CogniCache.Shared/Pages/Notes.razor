@@ -22,15 +22,21 @@
         <Buttons Role="ButtonsRole.Toolbar">
             <Buttons Margin="Margin.Is2.FromEnd">
                 <Button Color="Color.Primary">Primary</Button>
-                <Button Color="Color.Secondary">Secondary</Button>
-                <Button Color="Color.Info">Info</Button>
+                <Button Clicked="@OnEditClicked" Color="Color.Secondary" Active="@(EditorMode == EditorMode.Write)">
+                    <Icon Name="IconName.Edit" />
+                </Button>
+                <Button Clicked="@OnStarClicked" Color="Color.Secondary" Active="@SelectedNote.IsStarred">
+                    <Icon Name="IconName.Star" />
+                </Button>
             </Buttons>
             <Buttons>
-                <Button Color="Color.Danger">Danger</Button>
-                <Button Color="Color.Warning">Warning</Button>
+                <Button Color="Color.Secondary">Danger</Button>
+                <Button Color="Color.Secondary">Warning</Button>
             </Buttons>
             <Buttons Margin="Margin.Is2.OnX">
-                <Button Color="Color.Success">Success</Button>
+                <Button Clicked="@OnDeleteClicked" Color="Color.Danger">
+                    <Icon Name="IconName.Delete" />
+                </Button>
             </Buttons>
         </Buttons>
     </Column>
@@ -52,10 +58,10 @@
             </Alert>
         } else {
             <ListGroup Flush Mode="ListGroupMode.Selectable"
-            SelectedItemChanged="@(EventCallback.Factory.Create<string>(this, OnSelectedNoteChanged))">
+            @bind-SelectedItem="SelectedNoteId">
                 @foreach (var note in FilteredNotes)
                 {
-                    <ListGroupItem Name="@note.Id.ToString()">
+                    <ListGroupItem Name="@note.Id.ToString()" Color="Color.Default">
                         <Div Flex="Flex.JustifyContent.Between" Width="Width.Is100">
                             <Heading Size="HeadingSize.Is5" Margin="Margin.Is1.FromBottom">@note.Title</Heading>
                             <Small>@note.LastUpdatedDate</Small>
@@ -83,7 +89,28 @@
     private IEnumerable<NoteModel> AllNotes = new List<NoteModel>();
     private IEnumerable<NoteModel> FilteredNotes = new List<NoteModel>();
 
-    private NoteModel SelectedNote { get; set; } = new() { Title = "Untitled", Snippet = "", Body = "", Html = ""};
+    private string _selectedNoteId = string.Empty; 
+    private string SelectedNoteId { 
+        get => _selectedNoteId;
+        set { 
+            if (_selectedNoteId != value)
+            {
+                _selectedNoteId = value;
+                OnSelectedNoteChanged(); 
+            } 
+        } 
+    }
+
+    private NoteModel SelectedNote { get; set; } = new()
+    { 
+        Title = "Untitled", 
+        Snippet = "", 
+        Body = "", 
+        Html = "",
+        CreatedDate = DateTime.UtcNow,
+        IsStarred = false
+    };
+
     private EditorMode EditorMode = EditorMode.Preview;
 
     protected override void OnInitialized()
@@ -105,12 +132,15 @@
         {
             FilteredNotes = _noteService.GetManyByTag(TagPath);
         }
+
+        if (FilteredNotes.Any()) {
+            SelectedNoteId = FilteredNotes.First().Id.ToString();
+        }
     }
 
-    private Task OnSelectedNoteChanged(string selectedNoteId)
-    {
-        SelectedNote = _noteService.GetById(Convert.ToInt32(selectedNoteId));
-        return Task.CompletedTask;
+    private void OnSelectedNoteChanged()
+    { 
+        SelectedNote = FilteredNotes.Single(note => note.Id == Convert.ToInt32(selectedNoteId));
     }
 
     private Task OnMarkdownValueChanged(string value)
@@ -129,5 +159,29 @@
             FilteredNotes = FilteredNotes
                 .Where(note => snippets.Select(snippet => snippet.NoteId).Contains(note.Id));
         }
+    }
+
+    private Task OnEditClicked()
+    {
+        if (EditorMode == EditorMode.Preview) {
+            EditorMode = EditorMode.Write;
+        } else
+        {
+            EditorMode = EditorMode.Preview;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private Task OnStarClicked()
+    {
+        //TODO
+        return Task.CompletedTask;
+    }
+
+    private Task OnDeleteClicked()
+    {
+        //TODO
+        return Task.CompletedTask;
     }
 }

@@ -8,7 +8,9 @@ public class NoteModel
     public required string Body { get; set; }
     public required string Html { get; set; }
     public List<string> Tags { get; set; } = [];
+    public required DateTime CreatedDate { get; set; }
     public DateTime LastUpdatedDate { get; set; }
+    public required bool IsStarred { get; set; }
 
     public string TagsAsString()
     {

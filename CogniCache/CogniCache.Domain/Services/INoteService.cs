@@ -80,7 +80,9 @@ namespace CogniCache.Domain.Services
                 Body = note.Body,
                 Html = html,
                 Tags = note.Tags,
-                LastUpdatedDate = note.LastUpdatedDate
+                CreatedDate = note.CreatedDate ?? DateTime.MinValue,
+                LastUpdatedDate = note.LastUpdatedDate,
+                IsStarred = note.IsStarred
             };
         }
 
@@ -90,7 +92,7 @@ namespace CogniCache.Domain.Services
             var htmlStripped = Regex.Replace(html, "<.*?>", string.Empty);
             if (htmlStripped.Length >= 45)
             {
-                return htmlStripped.Substring(0, 45) + "...";
+                return string.Concat(htmlStripped.AsSpan(0, 45), "...");
             } else
             {
                 return htmlStripped;

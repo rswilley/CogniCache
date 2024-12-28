@@ -1,8 +1,16 @@
 ﻿@using CogniCache.Domain.Repositories.SearchRepository
 @inject ISearchRepository _searchRepository;
 
-<TextEdit Text="@_searchQuery" Placeholder="Search..." TextChanged="@OnSearchQueryChanged" />
-
+<Addons>
+    <Addon AddonType="AddonType.Body">
+        <TextEdit Text="@_searchQuery" Placeholder="Search..." TextChanged="@OnSearchQueryChanged" />
+    </Addon>
+    <Addon AddonType="AddonType.End">
+        <AddonLabel>
+            <Icon Name="IconName.Search" />
+        </AddonLabel>
+    </Addon>
+</Addons>
 @code {
     [Parameter] 
     public EventCallback<IEnumerable<SearchSnippet>> OnSearchSnippetsReceived { get; set; }
