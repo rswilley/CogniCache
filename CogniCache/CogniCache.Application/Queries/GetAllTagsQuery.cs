@@ -29,47 +29,46 @@ namespace CogniCache.Application.Queries
 
             var tags = new List<Tag>();
 
-            foreach (var note in _noteRepository.GetAll())
+            foreach (var tag in _noteRepository.GetAllTags())
             {
-                foreach (var tag in note.Tags)
+                var parts = tag.Split('/');
+                Tag? parent = null;
+                var path = "";
+
+                for (int i = 0; parts.Length > i; i++)
                 {
-                    var parts = tag.Split('/');
-                    Tag? parent = null;
-                    var path = "";
+                    var currentValue = parts[i];
+                    path += currentValue + "/";
 
-                    for (int i = 0; parts.Length > i; i++)
+                    if (i == 0)
                     {
-                        var currentValue = parts[i];
-                        path += currentValue + "/";
-
-                        if (i == 0)
+                        parent = tags.SingleOrDefault(t => t.Name == currentValue);
+                        if (parent == null)
                         {
-                            parent = tags.SingleOrDefault(t => t.Name == currentValue);
-                            if (parent == null)
+                            parent = new Tag
                             {
-                                parent = new Tag
-                                {
-                                    Parent = parent,
-                                    Name = currentValue,
-                                    Path = path.TrimEnd('/')
-                                };
-                                tags.Add(parent);
-                            }
-                        } else
+                                Parent = parent,
+                                Name = currentValue,
+                                Path = path.TrimEnd('/')
+                            };
+                            tags.Add(parent);
+                        }
+                    }
+                    else
+                    {
+                        if (!parent!.Children.Select(c => c.Name).Contains(currentValue))
                         {
-                            if (!parent!.Children.Select(c => c.Name).Contains(currentValue))
+                            var children = parent.Children.ToList();
+                            var child = new Tag
                             {
-                                var children = parent.Children.ToList();
-                                var child = new Tag {
-                                    Parent = parent,
-                                    Name = currentValue,
-                                    Path = path.TrimEnd('/')
-                                };
-                                children.Add(child);
-                                parent.Children = children;
+                                Parent = parent,
+                                Name = currentValue,
+                                Path = path.TrimEnd('/')
+                            };
+                            children.Add(child);
+                            parent.Children = children;
 
-                                parent = child;
-                            }
+                            parent = child;
                         }
                     }
                 }

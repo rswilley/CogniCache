@@ -1,4 +1,6 @@
-﻿namespace CogniCache.Domain.Repositories.NoteRepository
+﻿using CogniCache.Domain.Enums;
+
+namespace CogniCache.Domain.Repositories.NoteRepository
 {
     public interface INoteRepository
     {
@@ -6,7 +8,9 @@
         Note Upsert(Note note);
         void Delete(int id);
         Note GetById(int id);
-        List<Note> GetAll();
+        List<Note> GetManyPaginated(int offset, int limit, NoteSortMode? sortMode, string? tagPath);
         List<Note> GetManyByTagName(string tag);
+        List<string> GetAllTags();
+        bool HasNotes();
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace CogniCache.Domain
+﻿namespace CogniCache.Domain.Enums
 {
     public enum EditorMode
     {

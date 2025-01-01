@@ -1,4 +1,5 @@
-﻿using CogniCache.Domain.Repositories.NoteRepository;
+﻿using CogniCache.Domain.Enums;
+using CogniCache.Domain.Repositories.NoteRepository;
 using CogniCache.Infrastructure.Services;
 using LiteDB;
 
@@ -60,12 +61,44 @@ namespace CogniCache.Infrastructure.LiteDb
             col.Delete(id);
         }
 
-        public List<Note> GetAll()
+        public List<Note> GetManyPaginated(int offset, int limit, NoteSortMode? sortMode, string? tagPath)
         {
             using var db = new LiteDatabase(_config.DatabaseFilePath);
 
             var col = db.GetCollection<Note>("notes");
-            return col.FindAll().ToList();
+            var query = col.Query();
+
+            switch (sortMode)
+            {
+                case NoteSortMode.LastModified_Desc:
+                    query.OrderByDescending(x => x.LastUpdatedDate);
+                    break;
+                case NoteSortMode.LastModified_Asc:
+                    query.OrderBy(x => x.LastUpdatedDate);
+                    break;
+                case NoteSortMode.Created_Desc:
+                    query.OrderByDescending(x => x.CreatedDate);
+                    break;
+                case NoteSortMode.Created_Asc:
+                    query.OrderBy(x => x.CreatedDate);
+                    break;
+                case NoteSortMode.Title_Desc:
+                    query.OrderByDescending(x => x.Title);
+                    break;
+                case NoteSortMode.Title_Asc:
+                    query.OrderBy(x => x.Title);
+                    break;
+            }
+
+            if (!string.IsNullOrEmpty(tagPath)) { 
+                query.Where(q => q.Tags.Contains(tagPath));
+            }
+
+            var results = query
+                .Offset(offset)
+                .Limit(limit);
+
+            return results.ToList();
         }
 
         public Note GetById(int id)
@@ -82,6 +115,31 @@ namespace CogniCache.Infrastructure.LiteDb
 
             var col = db.GetCollection<Note>("notes");
             return col.Find(c => c.Tags.Contains(tag)).ToList();
+        }
+
+        public List<string> GetAllTags()
+        {
+            using var db = new LiteDatabase(_config.DatabaseFilePath);
+
+            var col = db.GetCollection<Note>("notes");
+            col.EnsureIndex(c => c.Tags);
+
+            var results = col.Query()
+                .Select(c => new { c.Tags })
+                .ToList()
+                .SelectMany(t => t.Tags)
+                .OrderBy(t => t)
+                .Distinct();
+
+            return results.ToList();
+        }
+
+        public bool HasNotes()
+        {
+            using var db = new LiteDatabase(_config.DatabaseFilePath);
+
+            var col = db.GetCollection<Note>("notes");
+            return col.Count() > 0;
         }
     }
 }

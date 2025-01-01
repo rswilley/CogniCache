@@ -23,11 +23,9 @@ namespace CogniCache.Application.Commands
             _noteRepository.Delete(request.NoteId);
             _searchRepository.DeleteById(request.NoteId);
 
-            var remainingNotes = _noteRepository.GetAll().OrderByDescending(n => n.LastUpdatedDate);
-
-            return new DeleteNoteCommandResponse(remainingNotes);
+            return new DeleteNoteCommandResponse();
         }
     }
 
-    public record DeleteNoteCommandResponse(IEnumerable<Note> RemainingNotes);
+    public record DeleteNoteCommandResponse;
 }

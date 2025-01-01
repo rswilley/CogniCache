@@ -1,10 +1,11 @@
 ﻿@page "/notes/{tagPath?}"
+@using CogniCache.Domain.Enums
+@using CogniCache.Domain.Repositories.SearchRepository
 @using CogniCache.Application
 @using CogniCache.Application.Queries
 @using CogniCache.Domain
 @using CogniCache.Domain.Models
 @using CogniCache.Domain.Repositories.NoteRepository
-@using CogniCache.Domain.Repositories.SearchRepository
 @using CogniCache.Domain.Services
 @using CogniCache.Shared.Components
 
@@ -16,7 +17,16 @@
 
 <Row>
     <Column ColumnSize="ColumnSize.Is3" Margin="Margin.Is5.FromBottom">
-        <Search OnSearchSnippetsReceived="HandleSearchSnippets" />
+        <Div Flex="Flex.JustifyContent.Between">
+            <Div Margin="Margin.Is2.FromEnd" Style="width: 100%;">
+                <Search OnSearchSnippetsReceived="HandleSearchSnippets" />
+            </Div>
+            <Div>
+                <Button Color="Color.Success">
+                    <Icon Name="IconName.Add" />
+                </Button>
+            </Div>
+        </Div>
     </Column>
     <Column ColumnSize="ColumnSize.Is9">
         <Buttons Role="ButtonsRole.Toolbar">
@@ -43,7 +53,7 @@
 </Row>
 <Row>
     <Column ColumnSize="ColumnSize.Is3">
-        @if (AllNotes.Count() == 0)
+        @if (!HasNotes)
         {
             <Alert Color="Color.Primary" Visible>
                 <AlertDescription>
@@ -73,12 +83,52 @@
             </ListGroup>
         }
     </Column>
-    <Column ColumnSize="ColumnSize.Is9">
+    <Column ColumnSize="ColumnSize.Is7">
         @if (EditorMode == EditorMode.Preview) {
             @((MarkupString)SelectedNote.Html)
         } else {
             <Markdown Value="@SelectedNote?.Body" ValueChanged="@OnMarkdownValueChanged" />
         }
+    </Column>
+    <Column ColumnSize="ColumnSize.Is2">
+        <Card>
+            <CardBody>
+                <CardTitle Size="3">
+                    Card title
+                </CardTitle>
+                <CardText>
+                    <Field Horizontal>
+                        <FieldLabel ColumnSize="ColumnSize.Is2">Permalink</FieldLabel>
+                        <FieldBody ColumnSize="ColumnSize.Is10">
+                            <TextEdit Placeholder="Some text value..." />
+                        </FieldBody>
+                    </Field>
+                    <Field Horizontal>
+                        <FieldLabel ColumnSize="ColumnSize.Is2">Created</FieldLabel>
+                        <FieldBody ColumnSize="ColumnSize.Is10">
+                            <TextEdit Placeholder="Some text value..." />
+                        </FieldBody>
+                    </Field>
+                    <Field Horizontal>
+                        <FieldLabel ColumnSize="ColumnSize.Is2">Last Updated</FieldLabel>
+                        <FieldBody ColumnSize="ColumnSize.Is10">
+                            <TextEdit Placeholder="Some text value..." />
+                        </FieldBody>
+                    </Field>
+                </CardText>
+            </CardBody>
+        </Card>
+
+        <Card>
+            <CardBody>
+                <CardTitle Size="3">
+                    Tags
+                </CardTitle>
+                <CardText>
+                    Tags n Stuff
+                </CardText>
+            </CardBody>
+        </Card>
     </Column>
 </Row>
 
@@ -86,7 +136,11 @@
     [Parameter]
     public string? TagPath { get; set; }
 
-    private IEnumerable<NoteModel> AllNotes = new List<NoteModel>();
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "sortBy")]
+    public string? SortBy { get; set; }
+
+    private bool HasNotes = false;
     private IEnumerable<NoteModel> FilteredNotes = new List<NoteModel>();
 
     private string _selectedNoteId = string.Empty; 
@@ -125,13 +179,8 @@
     }
 
     private void LoadNotes() {
-        AllNotes = _noteService.GetAll();
-        FilteredNotes = AllNotes;
-
-        if (!string.IsNullOrEmpty(TagPath))
-        {
-            FilteredNotes = _noteService.GetManyByTag(TagPath);
-        }
+        HasNotes = _noteService.HasNotes();
+        FilteredNotes = _noteService.GetManyPaginated(0, 25, SortBy, TagPath);
 
         if (FilteredNotes.Any()) {
             SelectedNoteId = FilteredNotes.First().Id.ToString();
@@ -140,7 +189,7 @@
 
     private void OnSelectedNoteChanged()
     { 
-        SelectedNote = FilteredNotes.Single(note => note.Id == Convert.ToInt32(selectedNoteId));
+        SelectedNote = FilteredNotes.Single(note => note.Id == Convert.ToInt32(_selectedNoteId));
     }
 
     private Task OnMarkdownValueChanged(string value)

@@ -1,4 +1,5 @@
-﻿using CogniCache.Domain.Models;
+﻿using CogniCache.Domain.Enums;
+using CogniCache.Domain.Models;
 using CogniCache.Domain.Repositories.NoteRepository;
 using System.Net;
 using System.Text.RegularExpressions;
@@ -7,7 +8,8 @@ namespace CogniCache.Domain.Services
 {
     public interface INoteService
     {
-        IEnumerable<NoteModel> GetAll();
+        bool HasNotes();
+        IEnumerable<NoteModel> GetManyPaginated(int offset, int limit, string? sortBy, string? tagPath);
         IEnumerable<NoteModel> GetManyByTag(string tag);
         NoteModel GetById(int id);
         string RemoveTitle(string body);
@@ -26,9 +28,34 @@ namespace CogniCache.Domain.Services
             _renderService = renderService;
         }
 
-        public IEnumerable<NoteModel> GetAll()
+        public bool HasNotes()
         {
-            var notes = _noteRepository.GetAll().OrderByDescending(n => n.CreatedDate);
+            return _noteRepository.HasNotes();
+        }
+
+        public IEnumerable<NoteModel> GetManyPaginated(int offset, int limit, string? sortBy, string? tagPath)
+        {
+            bool desc = false;
+            NoteSortMode? sortMode = null;
+            if (!string.IsNullOrEmpty(sortBy))
+            {
+                desc = sortBy[..1] == "-";
+                var asc = sortBy[..1] == "+";
+                if (!desc && !asc)
+                {
+                    sortBy = "+" + sortBy;
+                    asc = true;
+                }
+
+                var direction = desc ? "_Desc": "_Asc";
+                var sortByEnumValue = string.Concat(sortBy.AsSpan(1), direction);
+                sortMode = Enum.Parse<NoteSortMode>(sortByEnumValue);
+            } else
+            {
+                sortMode = NoteSortMode.LastModified_Desc;
+            }
+
+            var notes = _noteRepository.GetManyPaginated(offset, limit, sortMode, tagPath);
             return notes.Select(ToDomainModel);
         }
 
