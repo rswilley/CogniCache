@@ -22,33 +22,35 @@
                 <Search OnSearchSnippetsReceived="HandleSearchSnippets" />
             </Div>
             <Div>
-                <Button Color="Color.Success">
+                <Button Clicked="@OnAddClicked" Color="Color.Success">
                     <Icon Name="IconName.Add" />
                 </Button>
             </Div>
         </Div>
     </Column>
     <Column ColumnSize="ColumnSize.Is9">
-        <Buttons Role="ButtonsRole.Toolbar">
-            <Buttons Margin="Margin.Is2.FromEnd">
-                <Button Color="Color.Primary">Primary</Button>
-                <Button Clicked="@OnEditClicked" Color="Color.Secondary" Active="@(EditorMode == EditorMode.Write)">
-                    <Icon Name="IconName.Edit" />
-                </Button>
-                <Button Clicked="@OnStarClicked" Color="Color.Secondary" Active="@FilteredNotes[_selectedNoteIndex].IsStarred">
-                    <Icon Name="IconName.Star" />
-                </Button>
+        @if (FilteredNotes.Count > 0) {
+            <Buttons Role="ButtonsRole.Toolbar">
+                <Buttons Margin="Margin.Is2.FromEnd">
+                    <Button Color="Color.Primary">Primary</Button>
+                    <Button Clicked="@OnEditClicked" Color="Color.Secondary" Active="@(EditorMode == EditorMode.Write)">
+                        <Icon Name="IconName.Edit" />
+                    </Button>
+                    <Button Clicked="@OnStarClicked" Color="Color.Secondary" Active="@FilteredNotes[_selectedNoteIndex].IsStarred">
+                        <Icon Name="IconName.Star" />
+                    </Button>
+                </Buttons>
+                <Buttons>
+                    <Button Color="Color.Secondary">Danger</Button>
+                    <Button Color="Color.Secondary">Warning</Button>
+                </Buttons>
+                <Buttons Margin="Margin.Is2.OnX">
+                    <Button Clicked="@OnDeleteClicked" Color="Color.Danger">
+                        <Icon Name="IconName.Delete" />
+                    </Button>
+                </Buttons>
             </Buttons>
-            <Buttons>
-                <Button Color="Color.Secondary">Danger</Button>
-                <Button Color="Color.Secondary">Warning</Button>
-            </Buttons>
-            <Buttons Margin="Margin.Is2.OnX">
-                <Button Clicked="@OnDeleteClicked" Color="Color.Danger">
-                    <Icon Name="IconName.Delete" />
-                </Button>
-            </Buttons>
-        </Buttons>
+        }
     </Column>
 </Row>
 <Row>
@@ -84,10 +86,15 @@
         }
     </Column>
     <Column ColumnSize="ColumnSize.Is7">
-        @if (EditorMode == EditorMode.Preview) {
-            @((MarkupString)FilteredNotes[_selectedNoteIndex].Html)
-        } else {
-            <Markdown Value="@FilteredNotes[_selectedNoteIndex].Body" ValueChanged="@OnMarkdownValueChanged" />
+        @if (FilteredNotes.Count > 0) {
+            @if (EditorMode == EditorMode.Preview)
+            {
+                @((MarkupString)FilteredNotes[_selectedNoteIndex].Html)
+            }
+            else
+            {
+                <Markdown Value="@FilteredNotes[_selectedNoteIndex].Body" ValueChanged="@OnMarkdownValueChanged" />
+            }
         }
     </Column>
     <Column ColumnSize="ColumnSize.Is2">
@@ -243,6 +250,26 @@
         return Task.CompletedTask;
     }
 
+    private Task OnAddClicked()
+    {
+        var newNote = new NoteModel
+        {
+            Title = "Untitled",
+            Snippet = "",
+            Body = "# Untitled",
+            Html = "",
+            Tags = string.IsNullOrEmpty(TagPath) ? ["Untagged"] : [TagPath],
+            IsStarred = false,
+            CreatedDate = DateTime.UtcNow,
+            LastUpdatedDate = DateTime.UtcNow
+        };
+
+        _noteService.SaveNote(newNote);
+        RefreshNotes();
+
+        return Task.CompletedTask;
+    }
+
     private void AutoSaveNotes() {
         foreach (var note in FilteredNotes.Where(n => n.IsDirty))
         {
@@ -257,5 +284,9 @@
     private void OnAutoSaveNotes(Task task)
     {
         AutoSaveNotes();
+    }
+
+    private bool NoteExists(int index) {
+        return FilteredNotes.Count > 0 && index <= FilteredNotes.Count - 1;
     }
 }

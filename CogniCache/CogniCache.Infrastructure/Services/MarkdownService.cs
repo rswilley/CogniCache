@@ -7,7 +7,7 @@ namespace CogniCache.Infrastructure.Services
     {
         public string ToHtml(string value)
         {
-            return Markdown.ToHtml(value);
+            return Markdown.ToHtml(value ?? string.Empty);
         }
     }
 }

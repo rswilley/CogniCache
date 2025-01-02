@@ -112,7 +112,7 @@ namespace CogniCache.Domain.Services
         public void SaveNote(NoteModel note)
         {
             var title = GetTitle(note.Html);
-            var tags = GetTags(note.Html);
+            var tags = note.Tags.Any() ? note.Tags : GetTags(note.Html);
 
             var fileNameSuffix = note.Id == 0
                 ? _idService.Generate(DateTime.UtcNow.Ticks).ToString()
