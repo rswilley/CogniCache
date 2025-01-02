@@ -26,7 +26,6 @@ namespace CogniCache.DependencyResolver
         {
             // Application Use Cases
             services.AddSingleton<IRequest<GetAllTagsQuery, GetAllTagsQueryResponse>, GetAllTagsQueryHandler>();
-            services.AddSingleton<IRequest<SaveNoteCommand, SaveNoteCommandResponse>, SaveNoteCommandHandler>();
             services.AddSingleton<IRequest<DeleteNoteCommand, DeleteNoteCommandResponse>, DeleteNoteCommandHandler>();
 
             return services;

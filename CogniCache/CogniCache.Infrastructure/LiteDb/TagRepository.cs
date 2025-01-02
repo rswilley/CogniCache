@@ -1,5 +1,5 @@
 ﻿using CogniCache.Domain.Repositories.TagRepository;
-using CogniCache.Infrastructure.Services;
+using CogniCache.Domain.Services;
 using LiteDB;
 
 namespace CogniCache.Infrastructure.LiteDb

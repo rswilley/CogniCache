@@ -1,7 +1,7 @@
 ﻿using CogniCache.Domain.Repositories.NoteRepository;
 using CogniCache.Domain.Repositories.SearchRepository;
+using CogniCache.Domain.Services;
 using CogniCache.Infrastructure.Extensions;
-using CogniCache.Infrastructure.Services;
 using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.Standard;
 using Lucene.Net.Index;

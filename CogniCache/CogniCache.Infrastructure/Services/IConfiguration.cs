@@ -1,11 +1,6 @@
-﻿namespace CogniCache.Infrastructure.Services;
+﻿using CogniCache.Domain.Services;
 
-public interface IConfiguration
-{
-    string AppDirectory { get; }
-    string NotesDirectory { get; }
-    string DatabaseFilePath { get; }
-}
+namespace CogniCache.Infrastructure.Services;
 
 public class Configuration : IConfiguration
 {

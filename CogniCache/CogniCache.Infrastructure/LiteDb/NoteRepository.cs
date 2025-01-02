@@ -1,6 +1,6 @@
 ﻿using CogniCache.Domain.Enums;
 using CogniCache.Domain.Repositories.NoteRepository;
-using CogniCache.Infrastructure.Services;
+using CogniCache.Domain.Services;
 using LiteDB;
 
 namespace CogniCache.Infrastructure.LiteDb

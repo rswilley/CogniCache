@@ -1,6 +1,7 @@
 ﻿using CogniCache.Domain.Enums;
 using CogniCache.Domain.Models;
 using CogniCache.Domain.Repositories.NoteRepository;
+using CogniCache.Domain.Repositories.SearchRepository;
 using System.Net;
 using System.Text.RegularExpressions;
 
@@ -13,19 +14,33 @@ namespace CogniCache.Domain.Services
         IEnumerable<NoteModel> GetManyByTag(string tag);
         NoteModel GetById(int id);
         string RemoveTitle(string body);
+
+        void SaveNote(NoteModel note);
     }
 
     public class NoteService : INoteService
     {
+        private readonly IConfiguration _configuration;
         private readonly INoteRepository _noteRepository;
+        private readonly ISearchRepository _searchRepository;
         private readonly IRenderService _renderService;
+        private readonly IFileService _fileService;
+        private readonly IIdService _idService;
 
         public NoteService(
-            INoteRepository noteRepository, 
-            IRenderService renderService)
+            IConfiguration configuration,
+            INoteRepository noteRepository,
+            ISearchRepository searchRepository,
+            IRenderService renderService,
+            IFileService fileService,
+            IIdService idService)
         {
+            _configuration = configuration;
             _noteRepository = noteRepository;
+            _searchRepository = searchRepository;
             _renderService = renderService;
+            _fileService = fileService;
+            _idService = idService;
         }
 
         public bool HasNotes()
@@ -94,6 +109,30 @@ namespace CogniCache.Domain.Services
             return body.Replace(title, "");
         }
 
+        public void SaveNote(NoteModel note)
+        {
+            var title = GetTitle(note.Html);
+            var tags = GetTags(note.Html);
+
+            var fileNameSuffix = note.Id == 0
+                ? _idService.Generate(DateTime.UtcNow.Ticks).ToString()
+                : note.Id.ToString();
+            var fileName = _fileService.GetCleanFileName($"{title}-{fileNameSuffix}.md");
+
+            var upsertedNote = _noteRepository.Upsert(new Note
+            {
+                Id = note.Id,
+                Title = title,
+                Body = note.Body,
+                Tags = tags,
+                FileName = fileName,
+                LastUpdatedDate = DateTime.UtcNow
+            });
+            _searchRepository.Update(upsertedNote);
+
+            _fileService.SaveFile(Path.Combine(_configuration.NotesDirectory, fileName), note.Body);
+        }
+
         private NoteModel ToDomainModel(Note note)
         {
             var html = GetHtml(note.Body);
@@ -160,6 +199,47 @@ namespace CogniCache.Domain.Services
             }
 
             return html;
+        }
+
+        private static string GetTitle(string html)
+        {
+            string pattern = @"<h1\b[^>]*>(.*?)<\/h1>";
+
+            Match match = Regex.Match(html, pattern);
+            if (match.Success)
+            {
+                return match.Groups[1].Value;
+            }
+
+            return "Untitled";
+        }
+
+        private static List<string> GetTags(string html)
+        {
+            html = RemoveLinks(html);
+
+            string pattern = @"#\w+";
+
+            MatchCollection matches = Regex.Matches(html, pattern);
+
+            var tags = new List<string>();
+            foreach (Match match in matches)
+            {
+                if (tags.Contains(match.Value))
+                {
+                    continue;
+                }
+                tags.Add(match.Value);
+            }
+            return tags;
+        }
+
+        private static string RemoveLinks(string html)
+        {
+            string pattern = @"(<a.*?>.*?</a>)";
+            string result = Regex.Replace(html, pattern, string.Empty);
+
+            return result;
         }
     }
 }

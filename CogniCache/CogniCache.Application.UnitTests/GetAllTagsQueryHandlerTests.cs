@@ -1,4 +1,5 @@
 ﻿using CogniCache.Application.Queries;
+using CogniCache.Domain.Enums;
 using CogniCache.Domain.Repositories.NoteRepository;
 using CogniCache.Domain.Repositories.TagRepository;
 using Moq;
@@ -13,7 +14,7 @@ namespace CogniCache.Application.UnitTests
         {
             _tagRepositoryMock.Setup(x => x.GetAll()).Returns(new List<Tag>());
 
-            _noteRepositoryMock.Setup(x => x.GetAll()).Returns(new List<Note>
+            _noteRepositoryMock.Setup(x => x.GetManyPaginated(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<NoteSortMode?>(), It.IsAny<string?>())).Returns(new List<Note>
             {
                 new()
                 {
