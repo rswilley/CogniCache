@@ -35,7 +35,7 @@
                 <Button Clicked="@OnEditClicked" Color="Color.Secondary" Active="@(EditorMode == EditorMode.Write)">
                     <Icon Name="IconName.Edit" />
                 </Button>
-                <Button Clicked="@OnStarClicked" Color="Color.Secondary" Active="@SelectedNote.IsStarred">
+                <Button Clicked="@OnStarClicked" Color="Color.Secondary" Active="@FilteredNotes[_selectedNoteIndex].IsStarred">
                     <Icon Name="IconName.Star" />
                 </Button>
             </Buttons>
@@ -85,9 +85,9 @@
     </Column>
     <Column ColumnSize="ColumnSize.Is7">
         @if (EditorMode == EditorMode.Preview) {
-            @((MarkupString)SelectedNote.Html)
+            @((MarkupString)FilteredNotes[_selectedNoteIndex].Html)
         } else {
-            <Markdown Value="@SelectedNote?.Body" ValueChanged="@OnMarkdownValueChanged" />
+            <Markdown Value="@FilteredNotes[_selectedNoteIndex].Body" ValueChanged="@OnMarkdownValueChanged" />
         }
     </Column>
     <Column ColumnSize="ColumnSize.Is2">
@@ -141,8 +141,9 @@
     public string? SortBy { get; set; }
 
     private bool HasNotes = false;
-    private IEnumerable<NoteModel> FilteredNotes = new List<NoteModel>();
+    private List<NoteModel> FilteredNotes = new List<NoteModel>();
 
+    private int _selectedNoteIndex = 0;
     private string _selectedNoteId = string.Empty; 
     private string SelectedNoteId { 
         get => _selectedNoteId;
@@ -155,32 +156,25 @@
         } 
     }
 
-    private NoteModel SelectedNote { get; set; } = new()
-    { 
-        Title = "Untitled", 
-        Snippet = "", 
-        Body = "", 
-        Html = "",
-        CreatedDate = DateTime.UtcNow,
-        IsStarred = false
-    };
-
     private EditorMode EditorMode = EditorMode.Preview;
 
     protected override void OnInitialized()
     {
-        LoadNotes();
         base.OnInitialized();
     }
 
     protected override void OnParametersSet() {
-        LoadNotes();
+        RefreshNotes();
         base.OnParametersSet();
     }
 
-    private void LoadNotes() {
+    private CancellationTokenSource _autoSave = new();
+
+    private void RefreshNotes() {
+        AutoSaveNotes();
+
         HasNotes = _noteService.HasNotes();
-        FilteredNotes = _noteService.GetManyPaginated(0, 25, SortBy, TagPath);
+        FilteredNotes = _noteService.GetManyPaginated(0, 25, SortBy, TagPath).ToList();
 
         if (FilteredNotes.Any()) {
             SelectedNoteId = FilteredNotes.First().Id.ToString();
@@ -189,24 +183,39 @@
 
     private void OnSelectedNoteChanged()
     { 
-        SelectedNote = FilteredNotes.Single(note => note.Id == Convert.ToInt32(_selectedNoteId));
+        _selectedNoteIndex = FilteredNotes.FindIndex(note => note.Id == Convert.ToInt32(_selectedNoteId));
     }
 
-    private Task OnMarkdownValueChanged(string value)
+    private async Task OnMarkdownValueChanged(string value)
     {
-        SelectedNote.Body = value;
-        SelectedNote.Html = Markdig.Markdown.ToHtml(SelectedNote.Body ?? string.Empty);
+        FilteredNotes[_selectedNoteIndex].IsDirty = value != FilteredNotes[_selectedNoteIndex].Body;
+        FilteredNotes[_selectedNoteIndex].Body = value;
+        FilteredNotes[_selectedNoteIndex].Html = Markdig.Markdown.ToHtml(FilteredNotes[_selectedNoteIndex].Body ?? string.Empty);
 
-        return Task.CompletedTask;
+        if (EditorMode == EditorMode.Write) {
+            _autoSave.Cancel();
+            _autoSave = new();
+
+            try
+            {
+                await Task.Delay(500, _autoSave.Token).ContinueWith(OnAutoSaveNotes, _autoSave.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                //do nothing
+            }
+        }
     }
 
     private void HandleSearchSnippets(IEnumerable<SearchSnippet> snippets)
     {
         if (snippets == null) {
-            LoadNotes();
+            RefreshNotes();
         } else {
+            AutoSaveNotes();
             FilteredNotes = FilteredNotes
-                .Where(note => snippets.Select(snippet => snippet.NoteId).Contains(note.Id));
+                .Where(note => snippets.Select(snippet => snippet.NoteId).Contains(note.Id))
+                .ToList();
         }
     }
 
@@ -232,5 +241,21 @@
     {
         //TODO
         return Task.CompletedTask;
+    }
+
+    private void AutoSaveNotes() {
+        foreach (var note in FilteredNotes.Where(n => n.IsDirty))
+        {
+            var index = FilteredNotes.FindIndex(note => note.Id == note.Id);
+            _noteService.SaveNote(note);
+
+            FilteredNotes[index].IsDirty = false;
+            FilteredNotes[index].Body = note.Body;
+        }
+    }
+
+    private void OnAutoSaveNotes(Task task)
+    {
+        AutoSaveNotes();
     }
 }

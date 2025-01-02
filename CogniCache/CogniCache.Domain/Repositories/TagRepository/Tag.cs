@@ -1,4 +1,6 @@
-﻿namespace CogniCache.Domain.Repositories.TagRepository
+﻿using System.Net;
+
+namespace CogniCache.Domain.Repositories.TagRepository
 {
     public class Tag
     {

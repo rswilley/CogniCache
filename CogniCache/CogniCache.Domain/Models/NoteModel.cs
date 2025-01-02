@@ -11,6 +11,7 @@ public class NoteModel
     public required DateTime CreatedDate { get; set; }
     public DateTime LastUpdatedDate { get; set; }
     public required bool IsStarred { get; set; }
+    public bool IsDirty { get; set; }
 
     public string TagsAsString()
     {
