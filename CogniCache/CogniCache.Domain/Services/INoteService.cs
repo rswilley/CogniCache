@@ -15,7 +15,8 @@ namespace CogniCache.Domain.Services
         NoteModel GetById(int id);
         string RemoveTitle(string body);
 
-        void SaveNote(NoteModel note);
+        int SaveNote(NoteModel note);
+        void DeleteNote(int noteId);
     }
 
     public class NoteService : INoteService
@@ -109,7 +110,7 @@ namespace CogniCache.Domain.Services
             return body.Replace(title, "");
         }
 
-        public void SaveNote(NoteModel note)
+        public int SaveNote(NoteModel note)
         {
             var title = GetTitle(note.Html);
             var tags = note.Tags.Any() ? note.Tags : GetTags(note.Html);
@@ -126,11 +127,20 @@ namespace CogniCache.Domain.Services
                 Body = note.Body,
                 Tags = tags,
                 FileName = fileName,
-                LastUpdatedDate = DateTime.UtcNow
+                LastUpdatedDate = DateTime.UtcNow,
+                IsStarred = note.IsStarred
             });
-            _searchRepository.Update(upsertedNote);
 
+            _searchRepository.Update(upsertedNote);
             _fileService.SaveFile(Path.Combine(_configuration.NotesDirectory, fileName), note.Body);
+
+            return upsertedNote.Id;
+        }
+
+        public void DeleteNote(int noteId)
+        {
+            _noteRepository.Delete(noteId);
+            _searchRepository.DeleteById(noteId);
         }
 
         private NoteModel ToDomainModel(Note note)

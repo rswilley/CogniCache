@@ -32,7 +32,6 @@
         @if (FilteredNotes.Count > 0) {
             <Buttons Role="ButtonsRole.Toolbar">
                 <Buttons Margin="Margin.Is2.FromEnd">
-                    <Button Color="Color.Primary">Primary</Button>
                     <Button Clicked="@OnEditClicked" Color="Color.Secondary" Active="@(EditorMode == EditorMode.Write)">
                         <Icon Name="IconName.Edit" />
                     </Button>
@@ -41,8 +40,12 @@
                     </Button>
                 </Buttons>
                 <Buttons>
-                    <Button Color="Color.Secondary">Danger</Button>
-                    <Button Color="Color.Secondary">Warning</Button>
+                    <Button Color="Color.Secondary">
+                        <Icon Name="IconName.Tag" />
+                    </Button>
+                    <Button Color="Color.Secondary">
+                        <Icon Name="IconName.File" />
+                    </Button>
                 </Buttons>
                 <Buttons Margin="Margin.Is2.OnX">
                     <Button Clicked="@OnDeleteClicked" Color="Color.Danger">
@@ -85,7 +88,7 @@
             </ListGroup>
         }
     </Column>
-    <Column ColumnSize="ColumnSize.Is7">
+    <Column ColumnSize="ColumnSize.Is6">
         @if (FilteredNotes.Count > 0) {
             @if (EditorMode == EditorMode.Preview)
             {
@@ -97,42 +100,29 @@
             }
         }
     </Column>
-    <Column ColumnSize="ColumnSize.Is2">
+    <Column ColumnSize="ColumnSize.Is3">
         <Card>
             <CardBody>
-                <CardTitle Size="3">
-                    Card title
+                <CardTitle Size="4">
+                    Info
                 </CardTitle>
                 <CardText>
-                    <Field Horizontal>
-                        <FieldLabel ColumnSize="ColumnSize.Is2">Permalink</FieldLabel>
-                        <FieldBody ColumnSize="ColumnSize.Is10">
-                            <TextEdit Placeholder="Some text value..." />
-                        </FieldBody>
-                    </Field>
-                    <Field Horizontal>
-                        <FieldLabel ColumnSize="ColumnSize.Is2">Created</FieldLabel>
-                        <FieldBody ColumnSize="ColumnSize.Is10">
-                            <TextEdit Placeholder="Some text value..." />
-                        </FieldBody>
-                    </Field>
-                    <Field Horizontal>
-                        <FieldLabel ColumnSize="ColumnSize.Is2">Last Updated</FieldLabel>
-                        <FieldBody ColumnSize="ColumnSize.Is10">
-                            <TextEdit Placeholder="Some text value..." />
-                        </FieldBody>
-                    </Field>
+                    <Paragraph><strong>Permalink:</strong> {{noteId:@FilteredNotes[_selectedNoteIndex].Id}}</Paragraph>
+                    <Paragraph><strong>Created:</strong> @FilteredNotes[_selectedNoteIndex].CreatedDate</Paragraph>
+                    <Paragraph><strong>Last Updated:</strong> @FilteredNotes[_selectedNoteIndex].LastUpdatedDate</Paragraph>
                 </CardText>
             </CardBody>
         </Card>
 
-        <Card>
+        <Card Margin="Margin.Is5.FromTop">
             <CardBody>
-                <CardTitle Size="3">
+                <CardTitle Size="4">
                     Tags
                 </CardTitle>
                 <CardText>
-                    Tags n Stuff
+                    @foreach (var tag in FilteredNotes[_selectedNoteIndex].Tags) {
+                        <Badge Color="Color.Primary">@tag</Badge>
+                    }
                 </CardText>
             </CardBody>
         </Card>
@@ -151,7 +141,7 @@
     private List<NoteModel> FilteredNotes = new List<NoteModel>();
 
     private int _selectedNoteIndex = 0;
-    private string _selectedNoteId = string.Empty; 
+    private string _selectedNoteId = string.Empty;
     private string SelectedNoteId { 
         get => _selectedNoteId;
         set { 
@@ -171,20 +161,30 @@
     }
 
     protected override void OnParametersSet() {
-        RefreshNotes();
+        RefreshNotes(0);
         base.OnParametersSet();
     }
 
     private CancellationTokenSource _autoSave = new();
 
-    private void RefreshNotes() {
+    private void RefreshNotes(int selectedNoteId) {
         AutoSaveNotes();
 
         HasNotes = _noteService.HasNotes();
         FilteredNotes = _noteService.GetManyPaginated(0, 25, SortBy, TagPath).ToList();
 
         if (FilteredNotes.Any()) {
-            SelectedNoteId = FilteredNotes.First().Id.ToString();
+            if (selectedNoteId == 0) {
+                SelectedNoteId = FilteredNotes.First().Id.ToString();
+            } else {
+                var selectedNote = FilteredNotes.SingleOrDefault(note => note.Id == selectedNoteId);
+                if (selectedNote == null) {
+                    SelectedNoteId = FilteredNotes.First().Id.ToString();
+                } else {
+                    SelectedNoteId = FilteredNotes.Single(note => note.Id == selectedNoteId).Id.ToString();
+
+                }
+            }
         }
     }
 
@@ -217,7 +217,7 @@
     private void HandleSearchSnippets(IEnumerable<SearchSnippet> snippets)
     {
         if (snippets == null) {
-            RefreshNotes();
+            RefreshNotes(0);
         } else {
             AutoSaveNotes();
             FilteredNotes = FilteredNotes
@@ -240,13 +240,29 @@
 
     private Task OnStarClicked()
     {
-        //TODO
+        var isStarred = FilteredNotes[_selectedNoteIndex].IsStarred;
+        FilteredNotes[_selectedNoteIndex].IsStarred = !isStarred;
+        var noteId = _noteService.SaveNote(FilteredNotes[_selectedNoteIndex]);
+
+        FilteredNotes[_selectedNoteIndex].Id = noteId;
+
         return Task.CompletedTask;
     }
 
     private Task OnDeleteClicked()
     {
-        //TODO
+        var deleteNoteId = FilteredNotes[_selectedNoteIndex].Id;
+        _noteService.DeleteNote(deleteNoteId);
+
+        var deleteNoteIndex = FilteredNotes.FindIndex(note => note.Id == deleteNoteId);
+        var selectedIndex = deleteNoteIndex - 1;
+        if (selectedIndex < 0) {
+            selectedIndex = 0;
+        }
+
+        var selectedNoteId = FilteredNotes[selectedIndex].Id;
+        RefreshNotes(selectedNoteId);
+
         return Task.CompletedTask;
     }
 
@@ -254,7 +270,7 @@
     {
         var newNote = new NoteModel
         {
-            Title = "Untitled",
+            Title = "",
             Snippet = "",
             Body = "# Untitled",
             Html = "",
@@ -264,8 +280,8 @@
             LastUpdatedDate = DateTime.UtcNow
         };
 
-        _noteService.SaveNote(newNote);
-        RefreshNotes();
+        var id = _noteService.SaveNote(newNote);
+        RefreshNotes(id);
 
         return Task.CompletedTask;
     }
@@ -274,8 +290,9 @@
         foreach (var note in FilteredNotes.Where(n => n.IsDirty))
         {
             var index = FilteredNotes.FindIndex(note => note.Id == note.Id);
-            _noteService.SaveNote(note);
+            var noteId = _noteService.SaveNote(note);
 
+            FilteredNotes[index].Id = noteId;
             FilteredNotes[index].IsDirty = false;
             FilteredNotes[index].Body = note.Body;
         }

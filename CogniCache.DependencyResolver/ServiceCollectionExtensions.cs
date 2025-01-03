@@ -1,5 +1,4 @@
 ﻿using CogniCache.Application;
-using CogniCache.Application.Commands;
 using CogniCache.Application.Queries;
 using CogniCache.Domain.Services;
 using CogniCache.Domain;
@@ -26,7 +25,6 @@ namespace CogniCache.DependencyResolver
         {
             // Application Use Cases
             services.AddSingleton<IRequest<GetAllTagsQuery, GetAllTagsQueryResponse>, GetAllTagsQueryHandler>();
-            services.AddSingleton<IRequest<DeleteNoteCommand, DeleteNoteCommandResponse>, DeleteNoteCommandHandler>();
 
             return services;
         }
