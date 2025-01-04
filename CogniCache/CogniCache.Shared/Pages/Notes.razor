@@ -101,31 +101,42 @@
         }
     </Column>
     <Column ColumnSize="ColumnSize.Is3">
-        <Card>
-            <CardBody>
-                <CardTitle Size="4">
-                    Info
-                </CardTitle>
-                <CardText>
-                    <Paragraph><strong>Permalink:</strong> {{noteId:@FilteredNotes[_selectedNoteIndex].Id}}</Paragraph>
-                    <Paragraph><strong>Created:</strong> @FilteredNotes[_selectedNoteIndex].CreatedDate</Paragraph>
-                    <Paragraph><strong>Last Updated:</strong> @FilteredNotes[_selectedNoteIndex].LastUpdatedDate</Paragraph>
-                </CardText>
-            </CardBody>
-        </Card>
+        @if (FilteredNotes.Any()) {
+            <Card>
+                <CardBody>
+                    <CardTitle Size="4">
+                        Info
+                    </CardTitle>
+                    <CardText>
+                        <Paragraph><strong>Permalink:</strong> {{note:@FilteredNotes[_selectedNoteIndex].Id}}</Paragraph>
+                        <Paragraph><strong>Created:</strong> @FilteredNotes[_selectedNoteIndex].CreatedDate</Paragraph>
+                        <Paragraph><strong>Last Updated:</strong> @FilteredNotes[_selectedNoteIndex].LastUpdatedDate</Paragraph>
+                    </CardText>
+                </CardBody>
+            </Card>
 
-        <Card Margin="Margin.Is5.FromTop">
-            <CardBody>
-                <CardTitle Size="4">
-                    Tags
-                </CardTitle>
-                <CardText>
-                    @foreach (var tag in FilteredNotes[_selectedNoteIndex].Tags) {
-                        <Badge Color="Color.Primary">@tag</Badge>
-                    }
-                </CardText>
-            </CardBody>
-        </Card>
+            <Card Margin="Margin.Is5.FromTop">
+                <CardBody>
+                    <CardTitle Size="4">
+                        Tags
+                    </CardTitle>
+                    <CardText>
+                        @if (FilteredNotes[_selectedNoteIndex].Tags.Any())
+                        {
+                            @foreach (var tag in FilteredNotes[_selectedNoteIndex].Tags)
+                            {
+                                <Badge Color="Color.Primary">@tag</Badge>
+                            }
+                        }
+                        else
+                        {
+                            <Badge Color="Color.Primary">Untagged</Badge>
+                        }
+
+                    </CardText>
+                </CardBody>
+            </Card>
+        }
     </Column>
 </Row>
 
@@ -161,6 +172,7 @@
     }
 
     protected override void OnParametersSet() {
+        AutoSaveNotes();
         RefreshNotes(0);
         base.OnParametersSet();
     }
@@ -168,21 +180,21 @@
     private CancellationTokenSource _autoSave = new();
 
     private void RefreshNotes(int selectedNoteId) {
-        AutoSaveNotes();
-
         HasNotes = _noteService.HasNotes();
         FilteredNotes = _noteService.GetManyPaginated(0, 25, SortBy, TagPath).ToList();
 
         if (FilteredNotes.Any()) {
             if (selectedNoteId == 0) {
                 SelectedNoteId = FilteredNotes.First().Id.ToString();
+                _selectedNoteIndex = 0;
             } else {
                 var selectedNote = FilteredNotes.SingleOrDefault(note => note.Id == selectedNoteId);
                 if (selectedNote == null) {
                     SelectedNoteId = FilteredNotes.First().Id.ToString();
+                    _selectedNoteIndex = 0;
                 } else {
                     SelectedNoteId = FilteredNotes.Single(note => note.Id == selectedNoteId).Id.ToString();
-
+                    _selectedNoteIndex = FilteredNotes.FindIndex(note => note.Id == selectedNoteId);
                 }
             }
         }
@@ -220,7 +232,7 @@
             RefreshNotes(0);
         } else {
             AutoSaveNotes();
-            FilteredNotes = FilteredNotes
+            FilteredNotes = _noteService.GetManyPaginated(0, int.MaxValue, SortBy, TagPath)
                 .Where(note => snippets.Select(snippet => snippet.NoteId).Contains(note.Id))
                 .ToList();
         }
@@ -290,17 +302,25 @@
         foreach (var note in FilteredNotes.Where(n => n.IsDirty))
         {
             var index = FilteredNotes.FindIndex(note => note.Id == note.Id);
-            var noteId = _noteService.SaveNote(note);
-
-            FilteredNotes[index].Id = noteId;
-            FilteredNotes[index].IsDirty = false;
-            FilteredNotes[index].Body = note.Body;
+            _noteService.SaveNote(note);
         }
+
+        _autoSave.Cancel();
+        _autoSave = new();
     }
 
     private void OnAutoSaveNotes(Task task)
     {
         AutoSaveNotes();
+
+        if (string.IsNullOrEmpty(SelectedNoteId))
+        {
+            RefreshNotes(0);
+        }
+        else
+        {
+            RefreshNotes(Convert.ToInt32(SelectedNoteId));
+        }
     }
 
     private bool NoteExists(int index) {
