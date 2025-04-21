@@ -61,6 +61,13 @@ namespace CogniCache.Infrastructure.LiteDb
             col.Delete(id);
         }
 
+        public IEnumerable<Note> GetAll()
+        {
+            using var db = new LiteDatabase(_config.DatabaseFilePath);
+            var col = db.GetCollection<Note>("notes");
+            return col.FindAll().ToList();
+        }
+
         public List<Note> GetManyPaginated(int offset, int limit, NoteSortMode? sortMode, string? tagPath)
         {
             using var db = new LiteDatabase(_config.DatabaseFilePath);
@@ -90,7 +97,7 @@ namespace CogniCache.Infrastructure.LiteDb
                     break;
             }
 
-            if (!string.IsNullOrEmpty(tagPath)) { 
+            if (!string.IsNullOrEmpty(tagPath)) {
                 query.Where(q => q.Tags.Contains(tagPath));
             }
 

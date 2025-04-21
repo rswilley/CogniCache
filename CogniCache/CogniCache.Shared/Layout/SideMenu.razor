@@ -1,11 +1,13 @@
 ﻿@using CogniCache.Application
 @using CogniCache.Application.Queries
 @using CogniCache.Domain.Repositories.TagRepository
+@using CogniCache.Domain.Services
 @using CogniCache.Infrastructure.Services
 @using CogniCache.Shared.Components
 
 @inject IRequest<GetAllTagsQuery, GetAllTagsQueryResponse> getAllTagsQueryHandler
 @inject IConfigurationService configService
+@inject INoteService noteService;
 
 <Bar Breakpoint="Breakpoint.Desktop" NavigationBreakpoint="Breakpoint.Tablet" Background="Background.Dark" ThemeContrast="ThemeContrast.Dark"
 Mode="BarMode.VerticalInline" CollapseMode="BarCollapseMode.Small" MenuToggleBehavior=BarMenuToggleBehavior.AllowSingleMenu>
@@ -54,38 +56,8 @@ Mode="BarMode.VerticalInline" CollapseMode="BarCollapseMode.Small" MenuToggleBeh
                         Settings
                     </BarDropdownToggle>
                     <BarDropdownMenu>
-                        <BarDropdownItem To="tests/utilities/borders">
-                            Borders
-                        </BarDropdownItem>
-                        <BarDropdownItem To="tests/utilities/flex">
-                            Flex
-                        </BarDropdownItem>
-                        <BarDropdownItem To="tests/utilities/grid">
-                            Grid
-                        </BarDropdownItem>
-                        <BarDropdownItem To="tests/utilities/object-fit">
-                            Object Fit
-                        </BarDropdownItem>
-                        <BarDropdownItem To="tests/utilities/overflow">
-                            Overflow
-                        </BarDropdownItem>
-                        <BarDropdownItem To="tests/utilities/layout">
-                            Layout
-                        </BarDropdownItem>
-                        <BarDropdownItem To="tests/utilities/position">
-                            Position
-                        </BarDropdownItem>
-                        <BarDropdownItem To="tests/utilities/shadows">
-                            Shadows
-                        </BarDropdownItem>
-                        <BarDropdownItem To="tests/utilities/sizing">
-                            Sizing
-                        </BarDropdownItem>
-                        <BarDropdownItem To="tests/utilities/vertical-align">
-                            Vertical align
-                        </BarDropdownItem>
-                        <BarDropdownItem To="tests/utilities/services">
-                            Services
+                        <BarDropdownItem>
+                            <Button @onclick="ReindexNotes" Color="Color.Primary" Type="ButtonType.Button">Reindex Notes</Button>
                         </BarDropdownItem>
                     </BarDropdownMenu>
                 </BarDropdown>
@@ -103,5 +75,10 @@ Mode="BarMode.VerticalInline" CollapseMode="BarCollapseMode.Small" MenuToggleBeh
     {
         configService.LoadConfiguration();
         Tags = getAllTagsQueryHandler.Handle(new GetAllTagsQuery()).Tags;
+    }
+
+    private void ReindexNotes()
+    {
+        noteService.ReindexNotes();
     }
 }

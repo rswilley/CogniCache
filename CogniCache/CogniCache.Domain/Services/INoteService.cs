@@ -17,6 +17,7 @@ namespace CogniCache.Domain.Services
 
         int SaveNote(NoteModel note);
         void DeleteNote(int noteId);
+        void ReindexNotes();
     }
 
     public class NoteService : INoteService
@@ -89,7 +90,7 @@ namespace CogniCache.Domain.Services
         public NoteModel GetById(int id)
         {
             var note = _noteRepository.GetById(id);
-            
+
             return ToDomainModel(note);
         }
 
@@ -141,6 +142,15 @@ namespace CogniCache.Domain.Services
         {
             _noteRepository.Delete(noteId);
             _searchRepository.DeleteById(noteId);
+        }
+
+        public void ReindexNotes()
+        {
+            var allNotes = _noteRepository.GetAll().ToList();
+            foreach (var note in allNotes)
+            {
+                _searchRepository.Update(note);
+            }
         }
 
         private NoteModel ToDomainModel(Note note)
