@@ -1,11 +1,7 @@
 ﻿@page "/notes/{tagPath?}"
 @using CogniCache.Domain.Enums
 @using CogniCache.Domain.Repositories.SearchRepository
-@using CogniCache.Application
-@using CogniCache.Application.Queries
-@using CogniCache.Domain
 @using CogniCache.Domain.Models
-@using CogniCache.Domain.Repositories.NoteRepository
 @using CogniCache.Domain.Services
 @using CogniCache.Shared.Components
 
@@ -62,30 +58,17 @@
         {
             <Alert Color="Color.Primary" Visible>
                 <AlertDescription>
-                    You have no notes. <a href="/">Create</a> a note to get started.
+                    You have no notes. Create a note to get started.
                 </AlertDescription>
             </Alert>
-        } else if (FilteredNotes.Count() == 0) {
+        } else if (!FilteredNotes.Any()) {
             <Alert Color="Color.Primary" Visible>
                 <AlertDescription>
                     No notes found.
                 </AlertDescription>
             </Alert>
         } else {
-            <ListGroup Flush Mode="ListGroupMode.Selectable"
-            @bind-SelectedItem="SelectedNoteId">
-                @foreach (var note in FilteredNotes)
-                {
-                    <ListGroupItem Name="@note.Id.ToString()" Color="Color.Default">
-                        <Div Flex="Flex.JustifyContent.Between" Width="Width.Is100">
-                            <Heading Size="HeadingSize.Is5" Margin="Margin.Is1.FromBottom">@note.Title</Heading>
-                            <Small>@note.LastUpdatedDate</Small>
-                        </Div>
-                        <Paragraph Margin="Margin.Is1.FromBottom">@note.Snippet</Paragraph>
-                        <Small>@note.TagsAsString()</Small>
-                    </ListGroupItem>
-                }
-            </ListGroup>
+            <NotesListGroup Notes="FilteredNotes" OnSelectedNoteChanged="HandleSelectedNoteChanged"></NotesListGroup>
         }
     </Column>
     <Column ColumnSize="ColumnSize.Is6">
@@ -152,17 +135,6 @@
     private List<NoteModel> FilteredNotes = new List<NoteModel>();
 
     private int _selectedNoteIndex = 0;
-    private string _selectedNoteId = string.Empty;
-    private string SelectedNoteId { 
-        get => _selectedNoteId;
-        set { 
-            if (_selectedNoteId != value)
-            {
-                _selectedNoteId = value;
-                OnSelectedNoteChanged(); 
-            } 
-        } 
-    }
 
     private EditorMode EditorMode = EditorMode.Preview;
 
@@ -179,30 +151,26 @@
 
     private CancellationTokenSource _autoSave = new();
 
-    private void RefreshNotes(int selectedNoteId) {
+    private void RefreshNotes(int selectedNoteId)
+    {
         HasNotes = _noteService.HasNotes();
-        FilteredNotes = _noteService.GetManyPaginated(0, 25, SortBy, TagPath).ToList();
+        FilteredNotes = _noteService.GetManyPaginated(0, int.MaxValue, SortBy, TagPath).ToList();
 
-        if (FilteredNotes.Any()) {
-            if (selectedNoteId == 0) {
-                SelectedNoteId = FilteredNotes.First().Id.ToString();
-                _selectedNoteIndex = 0;
-            } else {
-                var selectedNote = FilteredNotes.SingleOrDefault(note => note.Id == selectedNoteId);
-                if (selectedNote == null) {
-                    SelectedNoteId = FilteredNotes.First().Id.ToString();
-                    _selectedNoteIndex = 0;
-                } else {
-                    SelectedNoteId = FilteredNotes.Single(note => note.Id == selectedNoteId).Id.ToString();
-                    _selectedNoteIndex = FilteredNotes.FindIndex(note => note.Id == selectedNoteId);
-                }
-            }
+        if (!FilteredNotes.Any())
+            return;
+
+        if (selectedNoteId == 0)
+        {
+            _selectedNoteIndex = 0;
+        } else
+        {
+            var selectedNote = FilteredNotes.SingleOrDefault(note => note.Id == selectedNoteId);
+            _selectedNoteIndex = selectedNote == null
+                ? 0
+                : FilteredNotes.FindIndex(note => note.Id == selectedNoteId);
         }
-    }
 
-    private void OnSelectedNoteChanged()
-    { 
-        _selectedNoteIndex = FilteredNotes.FindIndex(note => note.Id == Convert.ToInt32(_selectedNoteId));
+        FilteredNotes[_selectedNoteIndex].IsSelected = true;
     }
 
     private async Task OnMarkdownValueChanged(string value)
@@ -212,8 +180,8 @@
         FilteredNotes[_selectedNoteIndex].Html = Markdig.Markdown.ToHtml(FilteredNotes[_selectedNoteIndex].Body ?? string.Empty);
 
         if (EditorMode == EditorMode.Write) {
-            _autoSave.Cancel();
-            _autoSave = new();
+            await _autoSave.CancelAsync();
+            _autoSave = new CancellationTokenSource();
 
             try
             {
@@ -226,7 +194,7 @@
         }
     }
 
-    private void HandleSearchSnippets(IEnumerable<SearchSnippet> snippets)
+    private void HandleSearchSnippets(IEnumerable<SearchSnippet>? snippets)
     {
         if (snippets == null) {
             RefreshNotes(0);
@@ -235,7 +203,17 @@
             FilteredNotes = _noteService.GetManyPaginated(0, int.MaxValue, SortBy, TagPath)
                 .Where(note => snippets.Select(snippet => snippet.NoteId).Contains(note.Id))
                 .ToList();
+
+            if (FilteredNotes.Any())
+            {
+                FilteredNotes[0].IsSelected = true;
+            }
         }
+    }
+
+    private void HandleSelectedNoteChanged(string selectedNoteId)
+    {
+        _selectedNoteIndex = FilteredNotes.FindIndex(note => note.Id == Convert.ToInt32(selectedNoteId));
     }
 
     private Task OnEditClicked()
@@ -294,36 +272,29 @@
 
         var id = _noteService.SaveNote(newNote);
         RefreshNotes(id);
+        EditorMode = EditorMode.Write;
 
         return Task.CompletedTask;
     }
 
-    private void AutoSaveNotes() {
+    private void AutoSaveNotes()
+    {
+        var autoSave = false;
         foreach (var note in FilteredNotes.Where(n => n.IsDirty))
         {
-            var index = FilteredNotes.FindIndex(note => note.Id == note.Id);
             _noteService.SaveNote(note);
+            autoSave = true;
         }
 
+        if (autoSave)
+            InvokeAsync(StateHasChanged);
+
         _autoSave.Cancel();
-        _autoSave = new();
+        _autoSave = new CancellationTokenSource();
     }
 
     private void OnAutoSaveNotes(Task task)
     {
         AutoSaveNotes();
-
-        if (string.IsNullOrEmpty(SelectedNoteId))
-        {
-            RefreshNotes(0);
-        }
-        else
-        {
-            RefreshNotes(Convert.ToInt32(SelectedNoteId));
-        }
-    }
-
-    private bool NoteExists(int index) {
-        return FilteredNotes.Count > 0 && index <= FilteredNotes.Count - 1;
     }
 }

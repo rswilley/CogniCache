@@ -1,14 +1,13 @@
 ﻿@page "/"
-@using CogniCache.Infrastructure.Services
-@using CogniCache.Shared.Components
 @using CogniCache.Shared.Services
 
 @inject IFormFactor FormFactor
-@inject IConfigurationService configService
 
 <Heading Size="HeadingSize.Is1" Margin="Margin.Is3.OnY">
     Dashboard
 </Heading>
+
+<Paragraph>Form factor is @factor. Platform is @platform</Paragraph>
 
 <Row>
     <Column Margin="Margin.Is3.FromBottom">
@@ -22,6 +21,6 @@
 
     protected override void OnInitialized()
     {
-        configService.LoadConfiguration();
+
     }
 }

@@ -1,0 +1,38 @@
+@using CogniCache.Domain.Models
+
+<ListGroup Flush Mode="ListGroupMode.Selectable"
+           @bind-SelectedItem="SelectedNoteId">
+    @foreach (var note in Notes)
+    {
+        <ListGroupItem Name="@note.Id.ToString()" Color="Color.Default">
+            <Div Flex="Flex.JustifyContent.Between" Width="Width.Is100">
+                <Heading Size="HeadingSize.Is5" Margin="Margin.Is1.FromBottom">@note.Title</Heading>
+                <Small>@note.LastUpdatedDate</Small>
+            </Div>
+            <Paragraph Margin="Margin.Is1.FromBottom">@note.Snippet</Paragraph>
+            <Small>@note.TagsAsString()</Small>
+        </ListGroupItem>
+    }
+</ListGroup>
+
+@code {
+    [Parameter] public List<NoteModel> Notes { get; set; } = [];
+
+    [Parameter]
+    public EventCallback<string> OnSelectedNoteChanged { get; set; }
+
+    public string SelectedNoteId {
+        get => _selectedNoteId;
+        set
+        {
+            if (_selectedNoteId == value)
+                return;
+
+            _selectedNoteId = value;
+            OnSelectedNoteChanged.InvokeAsync(SelectedNoteId);
+        }
+    }
+
+    private string _selectedNoteId = string.Empty;
+    private DateTime? _lastUpdatedDate = null;
+}

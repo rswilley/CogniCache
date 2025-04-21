@@ -1,6 +1,7 @@
 ﻿using CogniCache.Domain.Repositories.NoteRepository;
 using CogniCache.Domain.Repositories.SearchRepository;
 using Lucene.Net.Documents;
+using Document = Lucene.Net.Documents.Document;
 
 namespace CogniCache.Infrastructure.Extensions
 {

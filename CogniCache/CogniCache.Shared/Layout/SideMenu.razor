@@ -1,9 +1,11 @@
 ﻿@using CogniCache.Application
 @using CogniCache.Application.Queries
 @using CogniCache.Domain.Repositories.TagRepository
+@using CogniCache.Infrastructure.Services
 @using CogniCache.Shared.Components
 
 @inject IRequest<GetAllTagsQuery, GetAllTagsQueryResponse> getAllTagsQueryHandler
+@inject IConfigurationService configService
 
 <Bar Breakpoint="Breakpoint.Desktop" NavigationBreakpoint="Breakpoint.Tablet" Background="Background.Dark" ThemeContrast="ThemeContrast.Dark"
 Mode="BarMode.VerticalInline" CollapseMode="BarCollapseMode.Small" MenuToggleBehavior=BarMenuToggleBehavior.AllowSingleMenu>
@@ -37,8 +39,8 @@ Mode="BarMode.VerticalInline" CollapseMode="BarCollapseMode.Small" MenuToggleBeh
                         Tags
                     </BarDropdownToggle>
                     <BarDropdownMenu>
-                        @foreach (var tag in Tags) { 
-                            <ChildDropdownItem Tag="tag" /> 
+                        @foreach (var tag in Tags) {
+                            <ChildDropdownItem Tag="tag" />
                         }
                     </BarDropdownMenu>
                 </BarDropdown>
@@ -99,6 +101,7 @@ Mode="BarMode.VerticalInline" CollapseMode="BarCollapseMode.Small" MenuToggleBeh
 
     protected override void OnInitialized()
     {
+        configService.LoadConfiguration();
         Tags = getAllTagsQueryHandler.Handle(new GetAllTagsQuery()).Tags;
     }
 }
