@@ -5,6 +5,7 @@ using CogniCache.Infrastructure.Extensions;
 using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.Standard;
 using Lucene.Net.Index;
+using Lucene.Net.QueryParsers.Classic;
 using Lucene.Net.Search;
 using Lucene.Net.Search.Highlight;
 using Lucene.Net.Store;
@@ -62,32 +63,62 @@ namespace CogniCache.Infrastructure.Lucene
             using var reader = DirectoryReader.Open(indexDir);
             IndexSearcher searcher = new IndexSearcher(reader);
 
-            var titleQuery = new TermQuery(new Term(nameof(Note.Title), searchQuery))
-            {
-                Boost = 2.0f
-            };
-            var bodyQuery = new TermQuery(new Term(nameof(Note.Body), searchQuery))
-            {
-                Boost = 1.0f
-            };
-            var booleanQuery = new BooleanQuery()
-            {
-                { titleQuery, Occur.SHOULD },
-                { bodyQuery, Occur.SHOULD }
-            };
-
-            TopDocs topDocs = searcher.Search(booleanQuery, int.MaxValue);
-
-            var snippets = new List<SearchSnippet>();
-            var highlighter = new SimpleHTMLFormatter("<b>", "</b>");
-
             var analyzer = GetStandardAnalyzer();
+            var parser = new MultiFieldQueryParser(
+                _luceneVersion,
+                [nameof(Note.Title), nameof(Note.Body)],
+                analyzer, new Dictionary<string, float>
+                {
+                    { nameof(Note.Title), 2.0f }, // Boost title field
+                    { nameof(Note.Body), 1.0f }   // Default boost for body
+                }
+            );
+
+            Query query;
+            try
+            {
+                query = parser.Parse(searchQuery);
+            }
+            catch (ParseException)
+            {
+                // Fallback for invalid query syntax
+                query = parser.Parse(QueryParserBase.Escape(searchQuery));
+            }
+
+            TopDocs topDocs = searcher.Search(query, int.MaxValue);
+            var snippets = GetSnippets(query, topDocs, searcher, analyzer);
+
+            return new SearchResult
+            {
+                TotalCount = topDocs.TotalHits,
+                Snippets = snippets
+            };
+        }
+
+        private static List<SearchSnippet> GetSnippets(Query query, TopDocs topDocs, IndexSearcher searcher, Analyzer analyzer)
+        {
+            var snippets = new List<SearchSnippet>();
+            var scorer = new QueryScorer(query);
+            var highlighter = new Highlighter(new SimpleHTMLFormatter("==", "=="), scorer)
+            {
+                // Set fragment size (characters)
+                TextFragmenter = new SimpleFragmenter(150)
+            };
+
             foreach (var scoreDoc in topDocs.ScoreDocs)
             {
                 var doc = searcher.Doc(scoreDoc.Doc);
                 var content = doc.Get(nameof(Note.Body));
-                var tokenStream = analyzer.GetTokenStream(nameof(Note.Body), content);
-                var snippet = highlighter.HighlightTerm(content, new TokenGroup(tokenStream));
+
+                // Extract a fragment with highlighting
+                using var tokenStream = analyzer.GetTokenStream(nameof(Note.Body), content);
+                var snippet = highlighter.GetBestFragments(tokenStream, content, 1, "...");
+
+                // If no highlight was found, use the beginning of the content
+                if (string.IsNullOrEmpty(snippet) && !string.IsNullOrEmpty(content))
+                {
+                    snippet = content.Length > 150 ? string.Concat(content.AsSpan(0, 150), "...") : content;
+                }
 
                 var noteSearchItem = doc.ToNoteSearchItem();
 
@@ -99,11 +130,7 @@ namespace CogniCache.Infrastructure.Lucene
                 });
             }
 
-            return new SearchResult
-            {
-                TotalCount = topDocs.TotalHits,
-                Snippets = snippets
-            };
+            return snippets;
         }
 
         private (IndexWriterConfig config, Analyzer analyzer) GetIndexWriterConfig()
