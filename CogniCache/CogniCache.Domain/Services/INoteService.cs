@@ -10,12 +10,12 @@ namespace CogniCache.Domain.Services
     public interface INoteService
     {
         bool HasNotes();
-        IEnumerable<NoteModel> GetManyPaginated(int offset, int limit, string? sortBy, string? tagPath);
-        IEnumerable<NoteModel> GetManyByTag(string tag);
-        NoteModel GetById(int id);
+        IEnumerable<MemoModel> GetManyPaginated(int offset, int limit, string? sortBy, string? tagPath);
+        IEnumerable<MemoModel> GetManyByTag(string tag);
+        MemoModel? GetById(int id);
         string RemoveTitle(string body);
 
-        int SaveNote(NoteModel note);
+        int SaveNote(MemoModel note);
         void DeleteNote(int noteId);
         void ReindexNotes();
     }
@@ -50,7 +50,7 @@ namespace CogniCache.Domain.Services
             return _noteRepository.HasNotes();
         }
 
-        public IEnumerable<NoteModel> GetManyPaginated(int offset, int limit, string? sortBy, string? tagPath)
+        public IEnumerable<MemoModel> GetManyPaginated(int offset, int limit, string? sortBy, string? tagPath)
         {
             bool desc = false;
             NoteSortMode? sortMode = null;
@@ -76,7 +76,7 @@ namespace CogniCache.Domain.Services
             return notes.Select(ToDomainModel);
         }
 
-        public IEnumerable<NoteModel> GetManyByTag(string tag)
+        public IEnumerable<MemoModel> GetManyByTag(string tag)
         {
             var decodedTag = WebUtility.HtmlDecode(tag);
             var notes = _noteRepository
@@ -87,9 +87,11 @@ namespace CogniCache.Domain.Services
             return notes;
         }
 
-        public NoteModel GetById(int id)
+        public MemoModel? GetById(int id)
         {
             var note = _noteRepository.GetById(id);
+            if (note == null)
+                return null;
 
             return ToDomainModel(note);
         }
@@ -111,10 +113,9 @@ namespace CogniCache.Domain.Services
             return body.Replace(title, "");
         }
 
-        public int SaveNote(NoteModel note)
+        public int SaveNote(MemoModel note)
         {
             var title = GetTitle(note.Html);
-            var tags = note.Tags.Any() ? note.Tags : GetTags(note.Html);
 
             var fileNameSuffix = note.Id == 0
                 ? _idService.Generate(DateTime.UtcNow.Ticks).ToString()
@@ -125,15 +126,17 @@ namespace CogniCache.Domain.Services
             {
                 Id = note.Id,
                 Title = title,
-                Body = note.Body,
-                Tags = tags,
+                Body = note.Content,
+                Tags = note.Tags.Count != 0 
+                    ? note.Tags 
+                    : [],
                 FileName = fileName,
                 LastUpdatedDate = DateTime.UtcNow,
                 IsStarred = note.IsStarred
             });
 
             _searchRepository.Update(upsertedNote);
-            _fileService.SaveFile(Path.Combine(_configuration.NotesDirectory, fileName), note.Body);
+            _fileService.SaveFile(Path.Combine(_configuration.NotesDirectory, fileName), note.Content);
 
             return upsertedNote.Id;
         }
@@ -153,36 +156,29 @@ namespace CogniCache.Domain.Services
             }
         }
 
-        private NoteModel ToDomainModel(Note note)
+        private MemoModel ToDomainModel(Note note)
         {
             var html = GetHtml(note.Body);
-            var snippet = GetSnippet(html);
+            var snippet = GetPreview(html);
 
-            return new NoteModel
+            return new MemoModel
             {
                 Id = note.Id,
                 Title = note.Title,
                 Snippet = snippet,
-                Body = note.Body,
+                Content = note.Body,
                 Html = html,
                 Tags = note.Tags,
-                CreatedDate = note.CreatedDate ?? DateTime.MinValue,
+                CreatedDate = note.CreatedDate,
                 LastUpdatedDate = note.LastUpdatedDate,
                 IsStarred = note.IsStarred
             };
         }
 
-        private string GetSnippet(string html)
+        private string GetPreview(string html)
         {
             html = RemoveTitle(html);
-            var htmlStripped = Regex.Replace(html, "<.*?>", string.Empty);
-            if (htmlStripped.Length >= 45)
-            {
-                return string.Concat(htmlStripped.AsSpan(0, 45), "...");
-            } else
-            {
-                return htmlStripped;
-            }
+            return html;
         }
 
         private string GetHtml(string body)
@@ -213,7 +209,7 @@ namespace CogniCache.Domain.Services
                     }
                     else
                     {
-                        html = html.Replace(oldValue, $"<a href='/notes/edit/{resultId}/1'>{note.Title}</a>");
+                        html = html.Replace(oldValue, $"<a href='/memos/{resultId}'>{note.Title}</a>");
                     }
                 }
             }
@@ -232,26 +228,6 @@ namespace CogniCache.Domain.Services
             }
 
             return "Untitled";
-        }
-
-        private static List<string> GetTags(string html)
-        {
-            html = RemoveLinks(html);
-
-            string pattern = @"#\w+";
-
-            MatchCollection matches = Regex.Matches(html, pattern);
-
-            var tags = new List<string>();
-            foreach (Match match in matches)
-            {
-                if (tags.Contains(match.Value))
-                {
-                    continue;
-                }
-                tags.Add(match.Value);
-            }
-            return tags;
         }
 
         private static string RemoveLinks(string html)

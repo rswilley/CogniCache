@@ -1,0 +1,17 @@
+﻿@using CogniCache.Domain.Enums
+
+<Markdown Autofocus Value="@Content" ValueChanged="@OnMarkdownValueChanged" />
+
+@code {
+    [Parameter]
+    public string Content { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback<string> OnContentChanged { get; set; }
+
+    private async Task OnMarkdownValueChanged(string value)
+    {
+        Content = value;
+        await OnContentChanged.InvokeAsync(value);
+    }
+}

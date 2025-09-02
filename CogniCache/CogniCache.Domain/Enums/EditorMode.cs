@@ -2,6 +2,7 @@
 {
     public enum EditorMode
     {
+        Compose,
         Write,
         Preview
     }

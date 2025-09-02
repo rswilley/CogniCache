@@ -1,0 +1,108 @@
+﻿@page "/memos/{memoId?}"
+@using CogniCache.Domain.Enums
+@using CogniCache.Domain.Models
+@using CogniCache.Domain.Services
+@using CogniCache.Shared.Components
+@using CogniCache.Shared.Services
+
+@inject INoteService _noteService
+@inject INavigationService _navigationService
+@inject IJSRuntime _js
+
+<Heading id="heading" Size="HeadingSize.Is1" Margin="Margin.Is3.OnY">
+    Memos
+</Heading>
+
+<Row>
+    <Column ColumnSize="ColumnSize.Is12">
+        @if (!string.IsNullOrEmpty(Tags))
+        {
+            <Breadcrumb>
+                <BreadcrumbItem>
+                    <BreadcrumbLink @onclick="OnMemosClicked" To="#">Memos</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbItem>
+                    @Tags
+                </BreadcrumbItem>
+            </Breadcrumb>
+        }
+    </Column>
+</Row>
+
+<Row>
+    <Column ColumnSize="ColumnSize.Is9" Margin="Margin.Is5.FromBottom">
+        <Memo EditorMode="@EditorMode.Compose" OnUpdate="HandleUpdate" />
+
+        @foreach (var memo in MemoModels)
+        {
+            <Div Margin="Margin.Is5.FromTop">
+                <Memo Model="memo" EditorMode="@EditorMode.Preview" OnUpdate="HandleUpdate" />
+            </Div>
+        }
+    </Column>
+    <Column ColumnSize="ColumnSize.Is3">
+        TODO
+    </Column>
+</Row>
+
+@code {
+    [Parameter]
+    public string? MemoId { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "tags")]
+    public string? Tags { get; set; }
+
+    private void HandleUpdate(MemoModel model)
+    {
+        //Change to HandleCommand (Save, Delete, Pin etc)
+        _noteService.SaveNote(model);
+        MemoModels = _noteService.GetManyPaginated(0, int.MaxValue, "", Tags).ToList();
+        StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadNotes();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadNotes();
+    }
+
+    private List<MemoModel> MemoModels = [];
+
+    private async Task LoadNotes()
+    {
+        if (string.IsNullOrEmpty(MemoId))
+        {
+            MemoModels = _noteService.GetManyPaginated(0, int.MaxValue, "", Tags).ToList();
+        }
+        else if (int.TryParse(MemoId, out int memoIdValue))
+        {
+            var memo = _noteService.GetById(memoIdValue);
+            if (memo == null)
+            {
+                NavigateToMemos();
+                return;
+            }
+
+            MemoModels = [memo];
+        }
+        else
+        {
+            NavigateToMemos();
+        }
+    }
+
+    private void OnMemosClicked()
+    {
+        _navigationService.NavigateToMemos();
+    }
+
+    private void NavigateToMemos()
+    {
+        _navigationService.NavigateToMemos();
+    }
+}

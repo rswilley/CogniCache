@@ -79,7 +79,7 @@
             }
             else
             {
-                <Markdown Value="@FilteredNotes[_selectedNoteIndex].Body" ValueChanged="@OnMarkdownValueChanged" />
+                <Markdown Value="@FilteredNotes[_selectedNoteIndex].Content" ValueChanged="@OnMarkdownValueChanged" />
             }
         }
     </Column>
@@ -132,7 +132,7 @@
     public string? SortBy { get; set; }
 
     private bool HasNotes = false;
-    private List<NoteModel> FilteredNotes = new List<NoteModel>();
+    private List<MemoModel> FilteredNotes = new List<MemoModel>();
 
     private int _selectedNoteIndex = 0;
 
@@ -164,10 +164,10 @@
             _selectedNoteIndex = 0;
         } else
         {
-            var selectedNote = FilteredNotes.SingleOrDefault(note => note.Id == selectedNoteId);
-            _selectedNoteIndex = selectedNote == null
-                ? 0
-                : FilteredNotes.FindIndex(note => note.Id == selectedNoteId);
+            // var selectedNote = FilteredNotes.SingleOrDefault(note => note.Id == selectedNoteId);
+            // _selectedNoteIndex = selectedNote == null
+            //     ? 0
+            //     : FilteredNotes.FindIndex(note => note.Id == selectedNoteId);
         }
 
         FilteredNotes[_selectedNoteIndex].IsSelected = true;
@@ -175,9 +175,9 @@
 
     private async Task OnMarkdownValueChanged(string value)
     {
-        FilteredNotes[_selectedNoteIndex].IsDirty = value != FilteredNotes[_selectedNoteIndex].Body;
-        FilteredNotes[_selectedNoteIndex].Body = value;
-        FilteredNotes[_selectedNoteIndex].Html = Markdig.Markdown.ToHtml(FilteredNotes[_selectedNoteIndex].Body ?? string.Empty);
+        FilteredNotes[_selectedNoteIndex].IsDirty = value != FilteredNotes[_selectedNoteIndex].Content;
+        FilteredNotes[_selectedNoteIndex].Content = value;
+        FilteredNotes[_selectedNoteIndex].Html = Markdig.Markdown.ToHtml(FilteredNotes[_selectedNoteIndex].Content ?? string.Empty);
 
         if (EditorMode == EditorMode.Write) {
             await _autoSave.CancelAsync();
@@ -200,9 +200,9 @@
             RefreshNotes(0);
         } else {
             AutoSaveNotes();
-            FilteredNotes = _noteService.GetManyPaginated(0, int.MaxValue, SortBy, TagPath)
-                .Where(note => snippets.Select(snippet => snippet.NoteId).Contains(note.Id))
-                .ToList();
+            // FilteredNotes = _noteService.GetManyPaginated(0, int.MaxValue, SortBy, TagPath)
+            //     .Where(note => snippets.Select(snippet => snippet.NoteId).Contains(note.Id))
+            //     .ToList();
 
             if (FilteredNotes.Any())
             {
@@ -213,7 +213,7 @@
 
     private void HandleSelectedNoteChanged(string selectedNoteId)
     {
-        _selectedNoteIndex = FilteredNotes.FindIndex(note => note.Id == Convert.ToInt32(selectedNoteId));
+        //_selectedNoteIndex = FilteredNotes.FindIndex(note => note.Id == Convert.ToInt32(selectedNoteId));
     }
 
     private Task OnEditClicked()
@@ -242,7 +242,7 @@
     private Task OnDeleteClicked()
     {
         var deleteNoteId = FilteredNotes[_selectedNoteIndex].Id;
-        _noteService.DeleteNote(deleteNoteId);
+        //_noteService.DeleteNote(deleteNoteId);
 
         var deleteNoteIndex = FilteredNotes.FindIndex(note => note.Id == deleteNoteId);
         var selectedIndex = deleteNoteIndex - 1;
@@ -251,18 +251,18 @@
         }
 
         var selectedNoteId = FilteredNotes[selectedIndex].Id;
-        RefreshNotes(selectedNoteId);
+        //RefreshNotes(selectedNoteId);
 
         return Task.CompletedTask;
     }
 
     private Task OnAddClicked()
     {
-        var newNote = new NoteModel
+        var newNote = new MemoModel
         {
             Title = "",
             Snippet = "",
-            Body = "# Untitled",
+            Content = "# Untitled",
             Html = "",
             Tags = string.IsNullOrEmpty(TagPath) ? ["Untagged"] : [TagPath],
             IsStarred = false,
@@ -271,7 +271,7 @@
         };
 
         var id = _noteService.SaveNote(newNote);
-        RefreshNotes(id);
+        //RefreshNotes(id);
         EditorMode = EditorMode.Write;
 
         return Task.CompletedTask;

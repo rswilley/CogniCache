@@ -1,6 +1,4 @@
-﻿using CogniCache.Domain.Repositories;
-
-namespace CogniCache.Domain.Repositories.SearchRepository
+﻿namespace CogniCache.Domain.Repositories.SearchRepository
 {
     public class NoteSearchItem : IDocument
     {

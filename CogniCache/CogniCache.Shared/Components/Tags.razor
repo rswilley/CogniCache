@@ -1,0 +1,71 @@
+﻿@using CogniCache.Domain.Enums
+@using CogniCache.Domain.Models
+@using CogniCache.Shared.Services
+
+@inject INavigationService _navigationService
+
+@if (EditorMode == EditorMode.Write)
+{
+    <Field>
+        <FieldLabel>Tags</FieldLabel>
+        <TextEdit Text="@tags" TextChanged="@OnTagsValueChanged">
+            <FieldHelp>Enter comma separated</FieldHelp>
+        </TextEdit>
+    </Field>
+}
+else
+{
+    @if (Model.Tags.Any())
+    {
+        @foreach (var tag in Model.Tags)
+        {
+            <Badge @onclick="() => OnTagClicked(tag)" Link="#" Color="Color.Primary">
+                @tag
+            </Badge>
+
+            <text>&nbsp;</text>
+        }
+    }
+    else
+    {
+        <Badge @onclick="() => OnTagClicked(null)" Link="#" Color="Color.Primary">
+            Untagged
+        </Badge>
+    }
+}
+
+@code {
+    [Parameter]
+    public required MemoModel Model { get; set; }
+
+    [Parameter]
+    public required EditorMode EditorMode { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnTagsChanged { get; set; }
+
+    private string tags = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        tags = Model.TagsAsString();
+    }
+
+    private void OnTagClicked(string? tag)
+    {
+        if (!string.IsNullOrEmpty(tag))
+        {
+            _navigationService.NavigateToTag(tag);
+        } else
+        {
+            _navigationService.NavigateToTag("Untagged");
+        }
+    }
+
+    Task OnTagsValueChanged(string value)
+    {
+        tags = value;
+
+        return Task.CompletedTask;
+    }
+}

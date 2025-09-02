@@ -16,7 +16,7 @@
 </ListGroup>
 
 @code {
-    [Parameter] public List<NoteModel> Notes { get; set; } = [];
+    [Parameter] public List<MemoModel> Notes { get; set; } = [];
 
     [Parameter]
     public EventCallback<string> OnSelectedNoteChanged { get; set; }

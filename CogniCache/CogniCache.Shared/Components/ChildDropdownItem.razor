@@ -1,7 +1,7 @@
 ﻿@using CogniCache.Domain.Repositories.TagRepository
 @using CogniCache.Shared.Services
 
-@inject ILinkService _linkService
+@inject INavigationService _navigationService
 
 @if (Tag.Children?.Any() == true)
 {
@@ -19,7 +19,7 @@
 }
 else
 {
-    <BarDropdownItem To="@_linkService.CreateTagUrl(Tag.Name)">
+    <BarDropdownItem @onclick="OnTagNameClicked" To="#">
         @Tag.Name
     </BarDropdownItem>
 }
@@ -27,4 +27,9 @@ else
 @code {
     [Parameter]
     public Tag Tag { get; set; }
+
+    private void OnTagNameClicked()
+    {
+        _navigationService.NavigateToTag(Tag.Name);
+    }
 }
