@@ -7,6 +7,7 @@ namespace CogniCache.Domain.Repositories.NoteRepository
         int Create(Note note);
         Note Upsert(Note note);
         void Delete(int id);
+        void SetFilename(int id, string fileName);
         Note GetById(int id);
         IEnumerable<Note> GetAll();
         List<Note> GetManyPaginated(int offset, int limit, NoteSortMode? sortMode, string? tagPath);

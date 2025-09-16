@@ -61,6 +61,16 @@ namespace CogniCache.Infrastructure.LiteDb
             col.Delete(id);
         }
 
+        public void SetFilename(int id, string fileName)
+        {
+            using var db = new LiteDatabase(_config.DatabaseFilePath);
+
+            var col = db.GetCollection<Note>("notes");
+            var toUpdate = col.FindById(id);
+            toUpdate.FileName = fileName;
+            col.Update(toUpdate);
+        }
+
         public IEnumerable<Note> GetAll()
         {
             using var db = new LiteDatabase(_config.DatabaseFilePath);

@@ -2,12 +2,6 @@
 
 public class MemoModel
 {
-    //public required string Id { get; init; }
-    //public string Title { get; init; } = string.Empty;
-    //public required string Content { get; set; }
-    //public bool IsStarred { get; set; }
-    //public List<string> Tags { get; set; } = [];
-    //public string TagsAsList => string.Join(", ", Tags);
     public int Id { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Snippet { get; set; } = string.Empty;

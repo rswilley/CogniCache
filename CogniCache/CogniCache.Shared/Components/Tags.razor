@@ -62,10 +62,9 @@ else
         }
     }
 
-    Task OnTagsValueChanged(string value)
+    async Task OnTagsValueChanged(string value)
     {
         tags = value;
-
-        return Task.CompletedTask;
+        await OnTagsChanged.InvokeAsync(tags);
     }
 }

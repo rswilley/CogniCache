@@ -80,7 +80,7 @@ namespace CogniCache.Domain.Services
         {
             var decodedTag = WebUtility.HtmlDecode(tag);
             var notes = _noteRepository
-                .GetManyByTagName(tag)
+                .GetManyByTagName(decodedTag)
                 .OrderByDescending(n => n.LastUpdatedDate)
                 .Select(ToDomainModel);
 
@@ -115,30 +115,60 @@ namespace CogniCache.Domain.Services
 
         public int SaveNote(MemoModel note)
         {
-            var title = GetTitle(note.Html);
+            var html = !string.IsNullOrEmpty(note.Html)
+                ? note.Html
+                : GetHtml(note.Content);
+            var title = GetTitle(html);
 
-            var fileNameSuffix = note.Id == 0
-                ? _idService.Generate(DateTime.UtcNow.Ticks).ToString()
-                : note.Id.ToString();
-            var fileName = _fileService.GetCleanFileName($"{title}-{fileNameSuffix}.md");
-
-            var upsertedNote = _noteRepository.Upsert(new Note
+            if (note.Id != 0)
             {
-                Id = note.Id,
-                Title = title,
-                Body = note.Content,
-                Tags = note.Tags.Count != 0 
-                    ? note.Tags 
-                    : [],
-                FileName = fileName,
-                LastUpdatedDate = DateTime.UtcNow,
-                IsStarred = note.IsStarred
-            });
+                var fileName = GetFilename(title, note.Id);
+                var upsertedNote = _noteRepository.Upsert(new Note
+                {
+                    Id = note.Id,
+                    Title = title,
+                    Body = note.Content,
+                    Tags = note.Tags.Count != 0
+                        ? note.Tags
+                        : [],
+                    FileName = fileName,
+                    LastUpdatedDate = DateTime.UtcNow,
+                    IsStarred = note.IsStarred
+                });
 
-            _searchRepository.Update(upsertedNote);
-            _fileService.SaveFile(Path.Combine(_configuration.NotesDirectory, fileName), note.Content);
+                _searchRepository.Update(upsertedNote);
+                _fileService.SaveFile(Path.Combine(_configuration.NotesDirectory, fileName), upsertedNote.Body);
 
-            return upsertedNote.Id;
+                return upsertedNote.Id;
+            }
+            else
+            {
+                var newNote = _noteRepository.Upsert(new Note
+                {
+                    Id = note.Id,
+                    Title = title,
+                    Body = note.Content,
+                    Tags = note.Tags.Count != 0
+                        ? note.Tags
+                        : [],
+                    FileName = string.Empty,
+                    LastUpdatedDate = DateTime.UtcNow,
+                    IsStarred = note.IsStarred
+                });
+
+                var fileName = GetFilename(title, newNote.Id);
+                _noteRepository.SetFilename(newNote.Id, fileName);
+                _searchRepository.Update(newNote);
+                _fileService.SaveFile(Path.Combine(_configuration.NotesDirectory, fileName), newNote.Body);
+
+                return newNote.Id;
+            }
+        }
+
+        private string GetFilename(string title, int noteId)
+        {
+            var fileName = _fileService.GetCleanFileName($"{title}-{noteId}.md");
+            return fileName;
         }
 
         public void DeleteNote(int noteId)
