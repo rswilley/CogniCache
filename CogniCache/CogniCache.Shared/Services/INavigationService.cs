@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components;
 using System.Net;
+using System.Text;
 
 namespace CogniCache.Shared.Services
 {
@@ -8,27 +9,47 @@ namespace CogniCache.Shared.Services
         void NavigateToTag(string tag);
         void NavigateToMemo(int id);
         void NavigateToMemos();
+        void NavigateToMemos(Filter filter);
     }
 
     public class NavigationService(NavigationManager navigationManager) : INavigationService
     {
-        private readonly NavigationManager _navigationManager = navigationManager;
-
         public void NavigateToTag(string tag)
         {
             var uri = "/memos/?tags=" + WebUtility.HtmlEncode(tag);
-            _navigationManager.NavigateTo(uri);
+            navigationManager.NavigateTo(uri);
         }
 
         public void NavigateToMemo(int id)
         {
             var uri = "/memos/" + id;
-            _navigationManager.NavigateTo(uri);
+            navigationManager.NavigateTo(uri);
         }
 
         public void NavigateToMemos()
         {
-            _navigationManager.NavigateTo("/memos");
+            navigationManager.NavigateTo("/memos");
         }
+
+        public void NavigateToMemos(Filter filter)
+        {
+            var queryStringBuilder = new StringBuilder();
+            if (filter.DateBegin.HasValue)
+            {
+                queryStringBuilder.Append("&dateBegin=" + filter.DateBegin.Value.ToString("yyyy-MM-dd"));
+            }
+            if (filter.DateEnd.HasValue)
+            {
+                queryStringBuilder.Append("&dateEnd=" + filter.DateEnd.Value.ToString("yyyy-MM-dd"));
+            }
+
+            navigationManager.NavigateTo($"/memos/?{queryStringBuilder}");
+        }
+    }
+
+    public class Filter
+    {
+        public DateTime? DateBegin { get; init; }
+        public DateTime? DateEnd { get; init; }
     }
 }

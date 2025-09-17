@@ -78,34 +78,15 @@ namespace CogniCache.Infrastructure.LiteDb
             return col.FindAll().ToList();
         }
 
-        public List<Note> GetManyPaginated(int offset, int limit, NoteSortMode? sortMode, string? tagPath)
+        public List<Note> GetManyPaginated(DateTime dateBegin, DateTime dateEnd, int offset, int limit, NoteSortMode? sortMode, string? tagPath)
         {
             using var db = new LiteDatabase(_config.DatabaseFilePath);
 
             var col = db.GetCollection<Note>("notes");
             var query = col.Query();
 
-            switch (sortMode)
-            {
-                case NoteSortMode.LastModified_Desc:
-                    query.OrderByDescending(x => x.LastUpdatedDate);
-                    break;
-                case NoteSortMode.LastModified_Asc:
-                    query.OrderBy(x => x.LastUpdatedDate);
-                    break;
-                case NoteSortMode.Created_Desc:
-                    query.OrderByDescending(x => x.CreatedDate);
-                    break;
-                case NoteSortMode.Created_Asc:
-                    query.OrderBy(x => x.CreatedDate);
-                    break;
-                case NoteSortMode.Title_Desc:
-                    query.OrderByDescending(x => x.Title);
-                    break;
-                case NoteSortMode.Title_Asc:
-                    query.OrderBy(x => x.Title);
-                    break;
-            }
+            HandleDateRange();
+            HandleSort();
 
             if (!string.IsNullOrEmpty(tagPath)) {
                 query.Where(q => q.Tags.Contains(tagPath));
@@ -116,6 +97,45 @@ namespace CogniCache.Infrastructure.LiteDb
                 .Limit(limit);
 
             return results.ToList();
+
+            void HandleDateRange()
+            {
+                switch (sortMode)
+                {
+                    case NoteSortMode.Created_Desc:
+                    case NoteSortMode.Created_Asc:
+                        query.Where(x => x.CreatedDate >= dateBegin && x.CreatedDate <= dateEnd);
+                        break;
+                    default:
+                        query.Where(x => x.LastUpdatedDate >= dateBegin && x.LastUpdatedDate <= dateEnd);
+                        break;
+                }
+            }
+
+            void HandleSort()
+            {
+                switch (sortMode)
+                {
+                    case NoteSortMode.LastModified_Desc:
+                        query.OrderByDescending(x => x.LastUpdatedDate);
+                        break;
+                    case NoteSortMode.LastModified_Asc:
+                        query.OrderBy(x => x.LastUpdatedDate);
+                        break;
+                    case NoteSortMode.Created_Desc:
+                        query.OrderByDescending(x => x.CreatedDate);
+                        break;
+                    case NoteSortMode.Created_Asc:
+                        query.OrderBy(x => x.CreatedDate);
+                        break;
+                    case NoteSortMode.Title_Desc:
+                        query.OrderByDescending(x => x.Title);
+                        break;
+                    case NoteSortMode.Title_Asc:
+                        query.OrderBy(x => x.Title);
+                        break;
+                }
+            }
         }
 
         public Note GetById(int id)

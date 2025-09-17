@@ -10,7 +10,7 @@ namespace CogniCache.Domain.Repositories.NoteRepository
         void SetFilename(int id, string fileName);
         Note GetById(int id);
         IEnumerable<Note> GetAll();
-        List<Note> GetManyPaginated(int offset, int limit, NoteSortMode? sortMode, string? tagPath);
+        List<Note> GetManyPaginated(DateTime dateBegin, DateTime dateEnd, int offset, int limit, NoteSortMode? sortMode, string? tagPath);
         List<Note> GetManyByTagName(string tag);
         List<string> GetAllTags();
         bool HasNotes();

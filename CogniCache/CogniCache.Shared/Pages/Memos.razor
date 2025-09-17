@@ -15,35 +15,55 @@
 
 <Row>
     <Column ColumnSize="ColumnSize.Is12">
-        @if (!string.IsNullOrEmpty(Tags))
-        {
-            <Breadcrumb>
-                <BreadcrumbItem>
-                    <BreadcrumbLink @onclick="OnMemosClicked" To="#">Memos</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbItem>
-                    @Tags
-                </BreadcrumbItem>
-            </Breadcrumb>
-        }
+        <Div Style="display: flex; align-items: center; justify-content: space-between">
+            <Div>
+                @if (!string.IsNullOrEmpty(Tags))
+                {
+                    <Breadcrumb>
+                        <BreadcrumbItem>
+                            <BreadcrumbLink @onclick="OnMemosClicked" To="#">Memos</BreadcrumbLink>
+                        </BreadcrumbItem>
+                        <BreadcrumbItem>
+                            @Tags
+                        </BreadcrumbItem>
+                    </Breadcrumb>
+                }
+            </Div>
+            <Div>
+                <Button Clicked="@ShowOffcanvas">Filter</Button>
+            </Div>
+        </Div>
     </Column>
 </Row>
 
-<Row>
-    <Column ColumnSize="ColumnSize.Is9" Margin="Margin.Is5.FromBottom">
+<Row Margin="Margin.Is3.OnY">
+    <Column ColumnSize="ColumnSize.Is12" Margin="Margin.Is5.FromBottom">
         <Memo EditorMode="@EditorMode.Compose" OnUpdate="HandleUpdate" />
 
-        @foreach (var memo in MemoModels)
+        @foreach (var memo in _memoModels)
         {
             <Div Margin="Margin.Is5.FromTop">
                 <Memo Model="memo" EditorMode="@EditorMode.Preview" OnUpdate="HandleUpdate" />
             </Div>
         }
     </Column>
-    <Column ColumnSize="ColumnSize.Is3">
-        TODO
-    </Column>
 </Row>
+
+<Offcanvas @ref="offcanvasRef" ShowBackdrop Placement="Placement.End" Style="width: 380px;">
+    <OffcanvasHeader>
+        <Heading Size="HeadingSize.Is3">Filters</Heading>
+        <CloseButton Clicked="@HideOffcanvas" />
+    </OffcanvasHeader>
+    <OffcanvasBody>
+        <Field>
+            <FieldLabel>Date range</FieldLabel>
+            <DatePicker TValue="DateTime?" @bind-Dates="filteredDates" InputMode="DateInputMode.Date" SelectionMode="DateInputSelectionMode.Range"/>
+        </Field>
+    </OffcanvasBody>
+    <OffcanvasFooter>
+        <Button Color="Color.Primary" Clicked="@ApplyFilters">Apply Filters</Button>
+    </OffcanvasFooter>
+</Offcanvas>
 
 @code {
     [Parameter]
@@ -53,31 +73,45 @@
     [SupplyParameterFromQuery(Name = "tags")]
     public string? Tags { get; set; }
 
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "dateBegin")]
+    public DateTime? DateBegin { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "dateEnd")]
+    public DateTime? DateEnd { get; set; }
+
+    public IReadOnlyList<DateTime?> filteredDates = [];
+    private Offcanvas offcanvasRef;
+
     private void HandleUpdate(MemoModel model)
     {
         //Change to HandleCommand (Save, Delete, Pin etc)
         _noteService.SaveNote(model);
-        MemoModels = _noteService.GetManyPaginated(0, int.MaxValue, "", Tags).ToList();
+        _memoModels = _noteService.GetManyPaginated(DateBegin!.Value, DateEnd!.Value, 0, int.MaxValue, "", Tags).ToList();
         StateHasChanged();
     }
 
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadNotes();
-    }
+    // protected override async Task OnInitializedAsync()
+    // {
+    //     await LoadNotes();
+    // }
 
     protected override async Task OnParametersSetAsync()
     {
+        DateBegin ??= DateTime.Now.Date;
+        DateEnd ??= DateTime.Now;
+        filteredDates = [DateBegin, DateEnd];
         await LoadNotes();
     }
 
-    private List<MemoModel> MemoModels = [];
+    private List<MemoModel> _memoModels = [];
 
     private async Task LoadNotes()
     {
         if (string.IsNullOrEmpty(MemoId))
         {
-            MemoModels = _noteService.GetManyPaginated(0, int.MaxValue, "", Tags).ToList();
+            _memoModels = _noteService.GetManyPaginated(DateBegin!.Value, DateEnd!.Value, 0, int.MaxValue, "", Tags).ToList();
         }
         else if (int.TryParse(MemoId, out int memoIdValue))
         {
@@ -88,7 +122,7 @@
                 return;
             }
 
-            MemoModels = [memo];
+            _memoModels = [memo];
         }
         else
         {
@@ -104,5 +138,25 @@
     private void NavigateToMemos()
     {
         _navigationService.NavigateToMemos();
+    }
+
+    private Task ShowOffcanvas()
+    {
+        return offcanvasRef.Show();
+    }
+
+    private Task HideOffcanvas()
+    {
+        return offcanvasRef.Hide();
+    }
+
+    private Task ApplyFilters()
+    {
+        _navigationService.NavigateToMemos(new Filter
+        {
+            DateBegin = filteredDates.FirstOrDefault(),
+            DateEnd = filteredDates.LastOrDefault()
+        });
+        return offcanvasRef.Hide();
     }
 }

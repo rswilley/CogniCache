@@ -3,7 +3,6 @@ using CogniCache.Domain.Enums;
 using CogniCache.Domain.Repositories.NoteRepository;
 using CogniCache.Domain.Repositories.TagRepository;
 using Moq;
-using static Lucene.Net.Util.Fst.Util;
 
 namespace CogniCache.Application.UnitTests
 {
@@ -14,7 +13,7 @@ namespace CogniCache.Application.UnitTests
         {
             _tagRepositoryMock.Setup(x => x.GetAll()).Returns(new List<Tag>());
 
-            _noteRepositoryMock.Setup(x => x.GetManyPaginated(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<NoteSortMode?>(), It.IsAny<string?>())).Returns(new List<Note>
+            _noteRepositoryMock.Setup(x => x.GetManyPaginated(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<NoteSortMode?>(), It.IsAny<string?>())).Returns(new List<Note>
             {
                 new()
                 {
@@ -22,7 +21,7 @@ namespace CogniCache.Application.UnitTests
                     Body = "",
                     FileName = "",
                     LastUpdatedDate = DateTime.UtcNow,
-                    Tags = [ 
+                    Tags = [
                         "this/is/a/hierarchy"
                     ]
                 }
@@ -30,7 +29,7 @@ namespace CogniCache.Application.UnitTests
 
             var subject = GetSubject();
             var result = subject.Handle(new GetAllTagsQuery());
-            
+
             Assert.Equal("this/is/a/hierarchy", "");
         }
 

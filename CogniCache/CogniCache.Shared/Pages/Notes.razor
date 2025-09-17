@@ -154,7 +154,7 @@
     private void RefreshNotes(int selectedNoteId)
     {
         HasNotes = _noteService.HasNotes();
-        FilteredNotes = _noteService.GetManyPaginated(0, int.MaxValue, SortBy, TagPath).ToList();
+        FilteredNotes = _noteService.GetManyPaginated(DateTime.MinValue, DateTime.Now, 0, int.MaxValue, SortBy, TagPath).ToList();
 
         if (!FilteredNotes.Any())
             return;
