@@ -4,10 +4,12 @@
 @using CogniCache.Domain.Services
 @using CogniCache.Infrastructure.Services
 @using CogniCache.Shared.Components
+@using CogniCache.Shared.Services
 
 @inject IRequest<GetAllTagsQuery, GetAllTagsQueryResponse> GetAllTagsQueryHandler
 @inject IConfigurationService ConfigService
 @inject INoteService NoteService;
+@inject IPubSubService PubSubService;
 
 <Bar Breakpoint="Breakpoint.Desktop" NavigationBreakpoint="Breakpoint.Tablet" Background="Background.Dark" ThemeContrast="ThemeContrast.Dark"
 Mode="BarMode.VerticalInline" CollapseMode="BarCollapseMode.Small" MenuToggleBehavior=BarMenuToggleBehavior.AllowSingleMenu>
@@ -81,6 +83,21 @@ Mode="BarMode.VerticalInline" CollapseMode="BarCollapseMode.Small" MenuToggleBeh
     {
         ConfigService.LoadConfiguration();
         _tags = GetAllTagsQueryHandler.Handle(new GetAllTagsQuery()).Tags;
+        PubSubService.Notify += UpdateMessage;
+    }
+
+    public void Dispose()
+    {
+        PubSubService.Notify -= UpdateMessage;
+    }
+
+    private void UpdateMessage(IMessage message)
+    {
+        if (message is not UpdateTagsMessage)
+            return;
+
+        _tags = GetAllTagsQueryHandler.Handle(new GetAllTagsQuery()).Tags;
+        InvokeAsync(StateHasChanged);
     }
 
     private void ReindexNotes()

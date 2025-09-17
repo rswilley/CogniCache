@@ -103,40 +103,26 @@
 
     private async Task OnSaveClicked()
     {
-        if (Model.Id == 0)
-        {
-            EditorMode = EditorMode.Compose;
-        }
-        else
-        {
-            EditorMode = EditorMode.Preview;
-        }
+        EditorMode = Model.Id == 0
+            ? EditorMode.Compose
+            : EditorMode.Preview;
         await OnUpdate.InvokeAsync(Model);
     }
 
     private Task OnCancelClicked()
     {
-        if (Model.Id == 0)
-        {
-            EditorMode = EditorMode.Compose;
-        } else
-        {
-            EditorMode = EditorMode.Preview;
-        }
+        EditorMode = Model.Id == 0
+            ? EditorMode.Compose
+            : EditorMode.Preview;
 
         return Task.CompletedTask;
     }
 
     private Task OnEditClicked()
     {
-        if (EditorMode == EditorMode.Preview)
-        {
-            EditorMode = EditorMode.Write;
-        }
-        else
-        {
-            EditorMode = EditorMode.Preview;
-        }
+        EditorMode = EditorMode == EditorMode.Preview
+            ? EditorMode.Write
+            : EditorMode.Preview;
 
         return Task.CompletedTask;
     }

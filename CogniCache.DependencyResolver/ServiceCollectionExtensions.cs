@@ -18,6 +18,7 @@ namespace CogniCache.DependencyResolver
         public static IServiceCollection AddShared(this IServiceCollection services)
         {
             services.AddScoped<INavigationService, NavigationService>();
+            services.AddScoped<IPubSubService, PubSubService>();
             return services;
         }
 
@@ -48,7 +49,7 @@ namespace CogniCache.DependencyResolver
             services.AddSingleton<INoteRepository, NoteRepository>();
             services.AddSingleton<ITagRepository, TagRepository>();
             services.AddSingleton<ISearchRepository, SearchRepository>();
-        
+
             return services;
         }
     }

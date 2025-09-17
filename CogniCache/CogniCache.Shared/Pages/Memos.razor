@@ -8,6 +8,7 @@
 
 @inject INoteService NoteService
 @inject INavigationService NavigationService
+@inject IPubSubService PubSubService
 
 <Heading id="heading" Size="HeadingSize.Is1" Margin="Margin.Is3.OnY">
     Memos
@@ -91,6 +92,8 @@
         NoteService.SaveNote(model);
         _memoModels = ReloadMemos();
         StateHasChanged();
+
+        PubSubService.Publish(new UpdateTagsMessage());
     }
 
     protected override async Task OnParametersSetAsync()
