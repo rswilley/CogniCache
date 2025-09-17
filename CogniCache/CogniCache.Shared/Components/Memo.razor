@@ -20,7 +20,7 @@
                             </DropdownToggle>
                             <DropdownMenu>
                                 <DropdownItem Clicked="@OnEditClicked">Edit</DropdownItem>
-                                <DropdownItem Clicked="@OnStarClicked">Pin</DropdownItem>
+                                <DropdownItem Clicked="@OnPinClicked">Pin</DropdownItem>
                                 <DropdownDivider />
                                 <DropdownItem Clicked="@OnDeleteClicked">Delete</DropdownItem>
                             </DropdownMenu>
@@ -78,7 +78,7 @@
     public required EditorMode EditorMode { get; set; }
 
     [Parameter]
-    public EventCallback<MemoModel> OnUpdate { get; set; }
+    public EventCallback<(NoteCommandType, MemoModel)> OnUpdate { get; set; }
 
     private void OnContentChanged(string content)
     {
@@ -106,7 +106,7 @@
         EditorMode = Model.Id == 0
             ? EditorMode.Compose
             : EditorMode.Preview;
-        await OnUpdate.InvokeAsync(Model);
+        await OnUpdate.InvokeAsync((NoteCommandType.Save, Model));
     }
 
     private Task OnCancelClicked()
@@ -127,13 +127,13 @@
         return Task.CompletedTask;
     }
 
-    private Task OnStarClicked()
+    private async Task OnPinClicked()
     {
-        return Task.CompletedTask;
+        await OnUpdate.InvokeAsync((NoteCommandType.Pin, Model));
     }
 
-    private Task OnDeleteClicked()
+    private async Task OnDeleteClicked()
     {
-        return Task.CompletedTask;
+        await OnUpdate.InvokeAsync((NoteCommandType.Delete, Model));
     }
 }

@@ -39,12 +39,12 @@
 
 <Row Margin="Margin.Is3.OnY">
     <Column ColumnSize="ColumnSize.Is12" Margin="Margin.Is5.FromBottom">
-        <Memo EditorMode="@EditorMode.Compose" OnUpdate="HandleUpdate" />
+        <Memo EditorMode="@EditorMode.Compose" OnUpdate="HandleCommand" />
 
         @foreach (var memo in _memoModels)
         {
             <Div Margin="Margin.Is5.FromTop">
-                <Memo Model="memo" EditorMode="@EditorMode.Preview" OnUpdate="HandleUpdate" />
+                <Memo Model="memo" EditorMode="@EditorMode.Preview" OnUpdate="HandleCommand" />
             </Div>
         }
     </Column>
@@ -86,10 +86,18 @@
     public IReadOnlyList<DateTime?> filteredDates = [];
     private Offcanvas offcanvasRef;
 
-    private void HandleUpdate(MemoModel model)
+    private void HandleCommand((NoteCommandType type, MemoModel model) command)
     {
-        //Change to HandleCommand (Save, Delete, Pin etc)
-        NoteService.SaveNote(model);
+        switch (command)
+        {
+            case (NoteCommandType.Delete, var model):
+                NoteService.DeleteNote(model.Id);
+                break;
+            case (NoteCommandType.Save, var model):
+                NoteService.SaveNote(model);
+                break;
+        }
+
         _memoModels = ReloadMemos();
         StateHasChanged();
 
