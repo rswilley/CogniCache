@@ -10,7 +10,7 @@ namespace CogniCache.Domain.Services
     public interface INoteService
     {
         bool HasNotes();
-        IEnumerable<MemoModel> GetManyPaginated(DateTime dateBegin, DateTime dateEnd, int offset, int limit, string? sortBy, string? tagPath);
+        IEnumerable<MemoModel> GetManyPaginated(DateTime? dateBegin, DateTime? dateEnd, int offset, int limit, string? sortBy, string? tagPath);
         IEnumerable<MemoModel> GetManyByTag(string tag);
         MemoModel? GetById(int id);
         string RemoveTitle(string body);
@@ -50,7 +50,7 @@ namespace CogniCache.Domain.Services
             return _noteRepository.HasNotes();
         }
 
-        public IEnumerable<MemoModel> GetManyPaginated(DateTime dateBegin, DateTime dateEnd, int offset, int limit, string? sortBy, string? tagPath)
+        public IEnumerable<MemoModel> GetManyPaginated(DateTime? dateBegin, DateTime? dateEnd, int offset, int limit, string? sortBy, string? tagPath)
         {
             bool desc = false;
             NoteSortMode? sortMode = null;
@@ -72,7 +72,7 @@ namespace CogniCache.Domain.Services
                 sortMode = NoteSortMode.LastModified_Desc;
             }
 
-            var notes = _noteRepository.GetManyPaginated(dateBegin, dateEnd.AddDays(1), offset, limit, sortMode, tagPath);
+            var notes = _noteRepository.GetManyPaginated(dateBegin, dateEnd, offset, limit, sortMode, tagPath);
             return notes.Select(ToDomainModel);
         }
 

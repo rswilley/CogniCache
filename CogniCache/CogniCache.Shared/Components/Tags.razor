@@ -2,13 +2,13 @@
 @using CogniCache.Domain.Models
 @using CogniCache.Shared.Services
 
-@inject INavigationService _navigationService
+@inject INavigationService NavigationService
 
 @if (EditorMode == EditorMode.Write)
 {
     <Field>
         <FieldLabel>Tags</FieldLabel>
-        <TextEdit Text="@tags" TextChanged="@OnTagsValueChanged">
+        <TextEdit Text="@_tags" TextChanged="@OnTagsValueChanged">
             <FieldHelp>Enter comma separated</FieldHelp>
         </TextEdit>
     </Field>
@@ -44,27 +44,21 @@ else
     [Parameter]
     public EventCallback<string> OnTagsChanged { get; set; }
 
-    private string tags = string.Empty;
+    private string _tags = string.Empty;
 
     protected override void OnInitialized()
     {
-        tags = Model.TagsAsString();
+        _tags = Model.TagsAsString();
     }
 
     private void OnTagClicked(string? tag)
     {
-        if (!string.IsNullOrEmpty(tag))
-        {
-            _navigationService.NavigateToTag(tag);
-        } else
-        {
-            _navigationService.NavigateToTag("Untagged");
-        }
+        NavigationService.NavigateToTag(!string.IsNullOrEmpty(tag) ? tag : "Untagged");
     }
 
     async Task OnTagsValueChanged(string value)
     {
-        tags = value;
-        await OnTagsChanged.InvokeAsync(tags);
+        _tags = value;
+        await OnTagsChanged.InvokeAsync(_tags);
     }
 }

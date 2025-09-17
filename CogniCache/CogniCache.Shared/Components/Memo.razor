@@ -2,7 +2,7 @@
 @using CogniCache.Domain.Models
 @using CogniCache.Shared.Services
 
-@inject INavigationService _linkService
+@inject INavigationService LinkService
 
 <Card>
     <CardBody>
@@ -93,7 +93,7 @@
     }
 
     private void OnMemoTitleClicked() {
-        _linkService.NavigateToMemo(Model.Id);
+        LinkService.NavigateToMemo(Model.Id);
     }
 
     private void OnToggleWriteModeClicked()

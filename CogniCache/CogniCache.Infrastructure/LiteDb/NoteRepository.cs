@@ -78,7 +78,7 @@ namespace CogniCache.Infrastructure.LiteDb
             return col.FindAll().ToList();
         }
 
-        public List<Note> GetManyPaginated(DateTime dateBegin, DateTime dateEnd, int offset, int limit, NoteSortMode? sortMode, string? tagPath)
+        public List<Note> GetManyPaginated(DateTime? dateBegin, DateTime? dateEnd, int offset, int limit, NoteSortMode? sortMode, string? tagPath)
         {
             using var db = new LiteDatabase(_config.DatabaseFilePath);
 
@@ -104,10 +104,16 @@ namespace CogniCache.Infrastructure.LiteDb
                 {
                     case NoteSortMode.Created_Desc:
                     case NoteSortMode.Created_Asc:
-                        query.Where(x => x.CreatedDate >= dateBegin && x.CreatedDate <= dateEnd);
+                        if (dateBegin.HasValue && dateEnd.HasValue)
+                        {
+                            query.Where(x => x.CreatedDate >= dateBegin.Value && x.CreatedDate <= dateEnd.Value.AddDays(1));
+                        }
                         break;
                     default:
-                        query.Where(x => x.LastUpdatedDate >= dateBegin && x.LastUpdatedDate <= dateEnd);
+                        if (dateBegin.HasValue && dateEnd.HasValue)
+                        {
+                            query.Where(x => x.LastUpdatedDate >= dateBegin.Value && x.LastUpdatedDate <= dateEnd.Value.AddDays(1));
+                        }
                         break;
                 }
             }

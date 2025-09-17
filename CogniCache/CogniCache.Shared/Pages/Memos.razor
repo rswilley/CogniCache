@@ -1,13 +1,13 @@
-﻿@page "/memos/{memoId?}"
+﻿@page "/memos"
+@page "/memos/{memoId}"
 @using CogniCache.Domain.Enums
 @using CogniCache.Domain.Models
 @using CogniCache.Domain.Services
 @using CogniCache.Shared.Components
 @using CogniCache.Shared.Services
 
-@inject INoteService _noteService
-@inject INavigationService _navigationService
-@inject IJSRuntime _js
+@inject INoteService NoteService
+@inject INavigationService NavigationService
 
 <Heading id="heading" Size="HeadingSize.Is1" Margin="Margin.Is3.OnY">
     Memos
@@ -30,7 +30,7 @@
                 }
             </Div>
             <Div>
-                <Button Clicked="@ShowOffcanvas">Filter</Button>
+                <Button Clicked="@ShowFilters">Filter</Button>
             </Div>
         </Div>
     </Column>
@@ -52,7 +52,7 @@
 <Offcanvas @ref="offcanvasRef" ShowBackdrop Placement="Placement.End" Style="width: 380px;">
     <OffcanvasHeader>
         <Heading Size="HeadingSize.Is3">Filters</Heading>
-        <CloseButton Clicked="@HideOffcanvas" />
+        <CloseButton Clicked="@HideFilters" />
     </OffcanvasHeader>
     <OffcanvasBody>
         <Field>
@@ -61,7 +61,8 @@
         </Field>
     </OffcanvasBody>
     <OffcanvasFooter>
-        <Button Color="Color.Primary" Clicked="@ApplyFilters">Apply Filters</Button>
+        <Button Color="Color.Primary" Clicked="@ApplyFilters">Apply</Button>
+        <Button Color="Color.Secondary" Clicked="@ClearFilters">Clear</Button>
     </OffcanvasFooter>
 </Offcanvas>
 
@@ -87,21 +88,13 @@
     private void HandleUpdate(MemoModel model)
     {
         //Change to HandleCommand (Save, Delete, Pin etc)
-        _noteService.SaveNote(model);
-        _memoModels = _noteService.GetManyPaginated(DateBegin!.Value, DateEnd!.Value, 0, int.MaxValue, "", Tags).ToList();
+        NoteService.SaveNote(model);
+        _memoModels = ReloadMemos();
         StateHasChanged();
     }
 
-    // protected override async Task OnInitializedAsync()
-    // {
-    //     await LoadNotes();
-    // }
-
     protected override async Task OnParametersSetAsync()
     {
-        DateBegin ??= DateTime.Now.Date;
-        DateEnd ??= DateTime.Now;
-        filteredDates = [DateBegin, DateEnd];
         await LoadNotes();
     }
 
@@ -111,11 +104,11 @@
     {
         if (string.IsNullOrEmpty(MemoId))
         {
-            _memoModels = _noteService.GetManyPaginated(DateBegin!.Value, DateEnd!.Value, 0, int.MaxValue, "", Tags).ToList();
+            _memoModels = ReloadMemos();
         }
-        else if (int.TryParse(MemoId, out int memoIdValue))
+        else if (int.TryParse(MemoId, out var memoIdValue))
         {
-            var memo = _noteService.GetById(memoIdValue);
+            var memo = NoteService.GetById(memoIdValue);
             if (memo == null)
             {
                 NavigateToMemos();
@@ -130,33 +123,45 @@
         }
     }
 
+    private List<MemoModel> ReloadMemos()
+    {
+        return NoteService.GetManyPaginated(DateBegin, DateEnd, 0, 10, "", Tags).ToList();
+    }
+
     private void OnMemosClicked()
     {
-        _navigationService.NavigateToMemos();
+        NavigationService.NavigateToMemos();
     }
 
     private void NavigateToMemos()
     {
-        _navigationService.NavigateToMemos();
+        NavigationService.NavigateToMemos();
     }
 
-    private Task ShowOffcanvas()
+    private Task ShowFilters()
     {
         return offcanvasRef.Show();
     }
 
-    private Task HideOffcanvas()
+    private Task HideFilters()
     {
         return offcanvasRef.Hide();
     }
 
     private Task ApplyFilters()
     {
-        _navigationService.NavigateToMemos(new Filter
+        NavigationService.NavigateToMemos(new Filter
         {
             DateBegin = filteredDates.FirstOrDefault(),
             DateEnd = filteredDates.LastOrDefault()
         });
+        return offcanvasRef.Hide();
+    }
+
+    private Task ClearFilters()
+    {
+        filteredDates = [];
+        NavigationService.NavigateToMemos();
         return offcanvasRef.Hide();
     }
 }

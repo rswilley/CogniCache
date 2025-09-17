@@ -5,9 +5,9 @@
 @using CogniCache.Infrastructure.Services
 @using CogniCache.Shared.Components
 
-@inject IRequest<GetAllTagsQuery, GetAllTagsQueryResponse> getAllTagsQueryHandler
-@inject IConfigurationService configService
-@inject INoteService noteService;
+@inject IRequest<GetAllTagsQuery, GetAllTagsQueryResponse> GetAllTagsQueryHandler
+@inject IConfigurationService ConfigService
+@inject INoteService NoteService;
 
 <Bar Breakpoint="Breakpoint.Desktop" NavigationBreakpoint="Breakpoint.Tablet" Background="Background.Dark" ThemeContrast="ThemeContrast.Dark"
 Mode="BarMode.VerticalInline" CollapseMode="BarCollapseMode.Small" MenuToggleBehavior=BarMenuToggleBehavior.AllowSingleMenu>
@@ -15,7 +15,7 @@ Mode="BarMode.VerticalInline" CollapseMode="BarCollapseMode.Small" MenuToggleBeh
     <BarBrand>
         <BarItem>
             <BarLink To="">
-                <BarIcon IconName="customIcon" />
+                <BarIcon IconName="_customIcon" />
                 CogniCache
             </BarLink>
         </BarItem>
@@ -47,7 +47,7 @@ Mode="BarMode.VerticalInline" CollapseMode="BarCollapseMode.Small" MenuToggleBeh
                         Tags
                     </BarDropdownToggle>
                     <BarDropdownMenu>
-                        @foreach (var tag in Tags) {
+                        @foreach (var tag in _tags) {
                             <ChildDropdownItem Tag="tag" />
                         }
                     </BarDropdownMenu>
@@ -73,18 +73,18 @@ Mode="BarMode.VerticalInline" CollapseMode="BarCollapseMode.Small" MenuToggleBeh
 </Bar>
 
 @code {
-    private IEnumerable<Tag> Tags = [];
+    private IEnumerable<Tag> _tags = [];
 
-    RenderFragment customIcon =@<img src="_content/CogniCache.Shared/img/cognicache-logo.png" style="width:40px; height: 40px" />;
+    readonly RenderFragment _customIcon = @<img src="_content/CogniCache.Shared/img/cognicache-logo.png" style="width:40px; height: 40px"/>;
 
     protected override void OnInitialized()
     {
-        configService.LoadConfiguration();
-        Tags = getAllTagsQueryHandler.Handle(new GetAllTagsQuery()).Tags;
+        ConfigService.LoadConfiguration();
+        _tags = GetAllTagsQueryHandler.Handle(new GetAllTagsQuery()).Tags;
     }
 
     private void ReindexNotes()
     {
-        noteService.ReindexNotes();
+        NoteService.ReindexNotes();
     }
 }
