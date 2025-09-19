@@ -12,7 +12,7 @@
               ValueField="@(item => item)"
               Placeholder="Search..."
               HighlightSearch>
-    @* <NotFoundContent> Sorry... @context was not found! :( </NotFoundContent> *@
+    <NotFoundContent> Sorry... @context was not found! :( </NotFoundContent>
     <ItemContent>
         <Div Flex="Flex.InlineFlex.JustifyContent.Between">
             <Heading Margin="Margin.Is2.FromBottom">@context.Value.Title</Heading>
