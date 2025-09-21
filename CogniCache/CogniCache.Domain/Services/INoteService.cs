@@ -1,4 +1,5 @@
 ﻿using CogniCache.Domain.Enums;
+using CogniCache.Domain.Extensions;
 using CogniCache.Domain.Models;
 using CogniCache.Domain.Repositories.NoteRepository;
 using CogniCache.Domain.Repositories.SearchRepository;
@@ -189,7 +190,7 @@ namespace CogniCache.Domain.Services
         private MemoModel ToDomainModel(Note note)
         {
             var html = GetHtml(note.Body);
-            var snippet = GetPreview(html);
+            var snippet = GetSnippet(html);
 
             return new MemoModel
             {
@@ -205,10 +206,18 @@ namespace CogniCache.Domain.Services
             };
         }
 
-        private string GetPreview(string html)
+        private string GetSnippet(string html)
         {
             html = RemoveTitle(html);
-            return html;
+            var htmlStripped = Regex.Replace(html, "<.*?>", string.Empty);
+            if (htmlStripped.Length >= 45)
+            {
+                return string.Concat(htmlStripped.AsSpan(0, 45), "...");
+            }
+            else
+            {
+                return htmlStripped;
+            }
         }
 
         private string GetHtml(string body)
@@ -239,7 +248,7 @@ namespace CogniCache.Domain.Services
                     }
                     else
                     {
-                        html = html.Replace(oldValue, $"<a href='/memos/{resultId}'>{note.Title}</a>");
+                        html = html.Replace(oldValue, $"<a href='/notes/{resultId}/{note.Title.ToSlug()}'>{note.Title}</a>");
                     }
                 }
             }

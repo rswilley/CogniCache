@@ -1,27 +1,45 @@
 @using CogniCache.Domain.Models
+@using CogniCache.Shared.Services
 
 <ListGroup Flush Mode="ListGroupMode.Selectable"
            @bind-SelectedItem="SelectedNoteId">
     @foreach (var note in Notes)
     {
-        <ListGroupItem Name="@note.Id.ToString()" Color="Color.Default">
+        <ListGroupItem Name="@note.Value.Id.ToString()" Color="Color.Default">
             <Div Flex="Flex.JustifyContent.Between" Width="Width.Is100">
-                <Heading Size="HeadingSize.Is5" Margin="Margin.Is1.FromBottom">@note.Title</Heading>
-                <Small>@note.LastUpdatedDate</Small>
+                <Heading Size="HeadingSize.Is5" Margin="Margin.Is1.FromBottom">@note.Value.Title</Heading>
+                <Small>@note.Value.LastUpdatedDate</Small>
             </Div>
-            <Paragraph Margin="Margin.Is1.FromBottom">@note.Snippet</Paragraph>
-            <Small>@note.TagsAsString()</Small>
+            <Paragraph Margin="Margin.Is1.FromBottom">@note.Value.Snippet</Paragraph>
+            <Small>@note.Value.TagsAsString()</Small>
         </ListGroupItem>
     }
 </ListGroup>
 
 @code {
-    [Parameter] public List<MemoModel> Notes { get; set; } = [];
+    [Parameter] 
+    public Dictionary<int, MemoModel> Notes { get; set; } = [];
+
+    [Parameter]
+    public int InitialSelectedNoteId { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (InitialSelectedNoteId == 0)
+        {
+            SelectedNoteId = Notes.First().Value.Id.ToString();
+        }
+        else
+        {
+            SelectedNoteId = InitialSelectedNoteId.ToString();
+        }
+    }
 
     [Parameter]
     public EventCallback<string> OnSelectedNoteChanged { get; set; }
 
-    public string SelectedNoteId {
+    public string SelectedNoteId
+    {
         get => _selectedNoteId;
         set
         {
@@ -34,5 +52,4 @@
     }
 
     private string _selectedNoteId = string.Empty;
-    private DateTime? _lastUpdatedDate = null;
 }

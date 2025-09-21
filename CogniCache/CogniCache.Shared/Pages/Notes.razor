@@ -1,15 +1,34 @@
-﻿@page "/notes/{tagPath?}"
+﻿@page "/notes"
+@page "/notes/{noteId:int}/{slug}"
 @using CogniCache.Domain.Enums
 @using CogniCache.Domain.Repositories.SearchRepository
 @using CogniCache.Domain.Models
 @using CogniCache.Domain.Services
 @using CogniCache.Shared.Components
+@using CogniCache.Shared.Services
 
 @inject INoteService _noteService
+@inject INavigationService NavigationService
 
 <Heading Size="HeadingSize.Is1" Margin="Margin.Is3.OnY">
     Notes
 </Heading>
+
+<Row>
+    <Column ColumnSize="ColumnSize.Is12" Margin="Margin.Is5.FromBottom">
+        @if (!string.IsNullOrEmpty(Tag))
+        {
+            <Breadcrumb>
+                <BreadcrumbItem>
+                    <BreadcrumbLink To="/notes">Notes</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbItem>
+                    @Tag
+                </BreadcrumbItem>
+            </Breadcrumb>
+        }
+    </Column>
+</Row>
 
 <Row>
     <Column ColumnSize="ColumnSize.Is3" Margin="Margin.Is5.FromBottom">
@@ -31,7 +50,7 @@
                     <Button Clicked="@OnEditClicked" Color="Color.Secondary" Active="@(EditorMode == EditorMode.Write)">
                         <Icon Name="IconName.Edit" />
                     </Button>
-                    <Button Clicked="@OnStarClicked" Color="Color.Secondary" Active="@FilteredNotes[_selectedNoteIndex].IsStarred">
+                    <Button Clicked="@OnStarClicked" Color="Color.Secondary" Active="@FilteredNotes[NoteId].IsStarred">
                         <Icon Name="IconName.Star" />
                     </Button>
                 </Buttons>
@@ -67,19 +86,21 @@
                     No notes found.
                 </AlertDescription>
             </Alert>
-        } else {
-            <NotesListGroup Notes="FilteredNotes" OnSelectedNoteChanged="HandleSelectedNoteChanged"></NotesListGroup>
+        }
+        else
+        {
+            <NotesListGroup Notes="FilteredNotes" InitialSelectedNoteId="NoteId" OnSelectedNoteChanged="HandleSelectedNoteChanged"></NotesListGroup>
         }
     </Column>
     <Column ColumnSize="ColumnSize.Is6">
         @if (FilteredNotes.Count > 0) {
             @if (EditorMode == EditorMode.Preview)
             {
-                @((MarkupString)FilteredNotes[_selectedNoteIndex].Html)
+                @((MarkupString)FilteredNotes[NoteId].Html)
             }
             else
             {
-                <Markdown Value="@FilteredNotes[_selectedNoteIndex].Content" ValueChanged="@OnMarkdownValueChanged" />
+                <Markdown Value="@FilteredNotes[NoteId].Content" ValueChanged="@OnMarkdownValueChanged" />
             }
         }
     </Column>
@@ -91,9 +112,9 @@
                         Info
                     </CardTitle>
                     <CardText>
-                        <Paragraph><strong>Permalink:</strong> {{note:@FilteredNotes[_selectedNoteIndex].Id}}</Paragraph>
-                        <Paragraph><strong>Created:</strong> @FilteredNotes[_selectedNoteIndex].CreatedDate</Paragraph>
-                        <Paragraph><strong>Last Updated:</strong> @FilteredNotes[_selectedNoteIndex].LastUpdatedDate</Paragraph>
+                        <Paragraph><strong>Permalink:</strong> {{note:@FilteredNotes[NoteId].Id}}</Paragraph>
+                        <Paragraph><strong>Created:</strong> @FilteredNotes[NoteId].CreatedDate</Paragraph>
+                        <Paragraph><strong>Last Updated:</strong> @FilteredNotes[NoteId].LastUpdatedDate</Paragraph>
                     </CardText>
                 </CardBody>
             </Card>
@@ -104,18 +125,17 @@
                         Tags
                     </CardTitle>
                     <CardText>
-                        @if (FilteredNotes[_selectedNoteIndex].Tags.Any())
+                        @if (FilteredNotes[NoteId].Tags.Any())
                         {
-                            @foreach (var tag in FilteredNotes[_selectedNoteIndex].Tags)
+                            @foreach (var tag in FilteredNotes[NoteId].Tags)
                             {
-                                <Badge Color="Color.Primary">@tag</Badge>
+                                <Badge @onclick="() => OnTagClicked(tag)" Link="#" Color="Color.Primary">@tag</Badge>
                             }
                         }
                         else
                         {
-                            <Badge Color="Color.Primary">Untagged</Badge>
+                            <Badge @onclick="() => OnTagClicked(null)" Link="#" Color="Color.Primary">Untagged</Badge>
                         }
-
                     </CardText>
                 </CardBody>
             </Card>
@@ -125,16 +145,21 @@
 
 @code {
     [Parameter]
-    public string? TagPath { get; set; }
+    public int NoteId { get; set; }
+
+    [Parameter]
+    public string? Slug { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "tag")]
+    public string? Tag { get; set; }
 
     [Parameter]
     [SupplyParameterFromQuery(Name = "sortBy")]
     public string? SortBy { get; set; }
 
     private bool HasNotes = false;
-    private List<MemoModel> FilteredNotes = new List<MemoModel>();
-
-    private int _selectedNoteIndex = 0;
+    private Dictionary<int, MemoModel> FilteredNotes = new();
 
     private EditorMode EditorMode = EditorMode.Preview;
 
@@ -145,7 +170,7 @@
 
     protected override void OnParametersSet() {
         AutoSaveNotes();
-        RefreshNotes(0);
+        RefreshNotes(NoteId);
         base.OnParametersSet();
     }
 
@@ -154,30 +179,27 @@
     private void RefreshNotes(int selectedNoteId)
     {
         HasNotes = _noteService.HasNotes();
-        FilteredNotes = _noteService.GetManyPaginated(DateTime.MinValue, DateTime.Now, 0, int.MaxValue, SortBy, TagPath).ToList();
+        FilteredNotes = _noteService.GetManyPaginated(DateTime.MinValue, DateTime.Now, 0, int.MaxValue, SortBy, Tag)
+            .ToDictionary(n => n.Id, n => n);
 
         if (!FilteredNotes.Any())
             return;
 
         if (selectedNoteId == 0)
         {
-            _selectedNoteIndex = 0;
+            FilteredNotes.First().Value.IsSelected = true;
         } else
         {
-            // var selectedNote = FilteredNotes.SingleOrDefault(note => note.Id == selectedNoteId);
-            // _selectedNoteIndex = selectedNote == null
-            //     ? 0
-            //     : FilteredNotes.FindIndex(note => note.Id == selectedNoteId);
+            var selectedNote = FilteredNotes.SingleOrDefault(note => note.Value.Id == selectedNoteId);
+            FilteredNotes[NoteId].IsSelected = true;
         }
-
-        FilteredNotes[_selectedNoteIndex].IsSelected = true;
     }
 
     private async Task OnMarkdownValueChanged(string value)
     {
-        FilteredNotes[_selectedNoteIndex].IsDirty = value != FilteredNotes[_selectedNoteIndex].Content;
-        FilteredNotes[_selectedNoteIndex].Content = value;
-        FilteredNotes[_selectedNoteIndex].Html = Markdig.Markdown.ToHtml(FilteredNotes[_selectedNoteIndex].Content ?? string.Empty);
+        FilteredNotes[NoteId].IsDirty = value != FilteredNotes[NoteId].Content;
+        FilteredNotes[NoteId].Content = value;
+        FilteredNotes[NoteId].Html = Markdig.Markdown.ToHtml(FilteredNotes[NoteId].Content ?? string.Empty);
 
         if (EditorMode == EditorMode.Write) {
             await _autoSave.CancelAsync();
@@ -200,9 +222,9 @@
             RefreshNotes(0);
         } else {
             AutoSaveNotes();
-            // FilteredNotes = _noteService.GetManyPaginated(0, int.MaxValue, SortBy, TagPath)
-            //     .Where(note => snippets.Select(snippet => snippet.NoteId).Contains(note.Id))
-            //     .ToList();
+            FilteredNotes = _noteService.GetManyPaginated(DateTime.MinValue, DateTime.Now, 0, int.MaxValue, SortBy, Tag)
+                .Where(note => snippets.Select(snippet => snippet.NoteId).Contains(note.Id))
+                .ToDictionary(n => n.Id, n => n);
 
             if (FilteredNotes.Any())
             {
@@ -213,7 +235,7 @@
 
     private void HandleSelectedNoteChanged(string selectedNoteId)
     {
-        //_selectedNoteIndex = FilteredNotes.FindIndex(note => note.Id == Convert.ToInt32(selectedNoteId));
+        NoteId = Convert.ToInt32(selectedNoteId);
     }
 
     private Task OnEditClicked()
@@ -230,28 +252,24 @@
 
     private Task OnStarClicked()
     {
-        var isStarred = FilteredNotes[_selectedNoteIndex].IsStarred;
-        FilteredNotes[_selectedNoteIndex].IsStarred = !isStarred;
-        var noteId = _noteService.SaveNote(FilteredNotes[_selectedNoteIndex]);
+        var isStarred = FilteredNotes[NoteId].IsStarred;
+        FilteredNotes[NoteId].IsStarred = !isStarred;
+        var noteId = _noteService.SaveNote(FilteredNotes[NoteId]);
 
-        FilteredNotes[_selectedNoteIndex].Id = noteId;
+        FilteredNotes[NoteId].Id = noteId;
 
         return Task.CompletedTask;
     }
 
     private Task OnDeleteClicked()
     {
-        var deleteNoteId = FilteredNotes[_selectedNoteIndex].Id;
-        //_noteService.DeleteNote(deleteNoteId);
+        var deleteNoteId = FilteredNotes[NoteId].Id;
+        _noteService.DeleteNote(deleteNoteId);
 
-        var deleteNoteIndex = FilteredNotes.FindIndex(note => note.Id == deleteNoteId);
-        var selectedIndex = deleteNoteIndex - 1;
-        if (selectedIndex < 0) {
-            selectedIndex = 0;
-        }
+        NoteId = FilteredNotes.Keys.Where(id => id != deleteNoteId).FirstOrDefault();
+        RefreshNotes(NoteId);
 
-        var selectedNoteId = FilteredNotes[selectedIndex].Id;
-        //RefreshNotes(selectedNoteId);
+        EditorMode = EditorMode.Preview;
 
         return Task.CompletedTask;
     }
@@ -264,14 +282,16 @@
             Snippet = "",
             Content = "# Untitled",
             Html = "",
-            Tags = string.IsNullOrEmpty(TagPath) ? ["Untagged"] : [TagPath],
+            Tags = string.IsNullOrEmpty(Tag) ? ["Untagged"] : [Tag],
             IsStarred = false,
             CreatedDate = DateTime.UtcNow,
             LastUpdatedDate = DateTime.UtcNow
         };
 
         var id = _noteService.SaveNote(newNote);
-        //RefreshNotes(id);
+        RefreshNotes(id);
+        NoteId = id;
+
         EditorMode = EditorMode.Write;
 
         return Task.CompletedTask;
@@ -280,9 +300,14 @@
     private void AutoSaveNotes()
     {
         var autoSave = false;
-        foreach (var note in FilteredNotes.Where(n => n.IsDirty))
+        foreach (var note in FilteredNotes.Where(n => n.Value.IsDirty))
         {
-            _noteService.SaveNote(note);
+            if (note.Value.Content.Trim().Length == 0)
+                continue;
+
+            _noteService.SaveNote(note.Value);
+
+            note.Value.IsDirty = false;
             autoSave = true;
         }
 
@@ -296,5 +321,10 @@
     private void OnAutoSaveNotes(Task task)
     {
         AutoSaveNotes();
+    }
+
+    private void OnTagClicked(string? tag)
+    {
+        NavigationService.NavigateToTag(!string.IsNullOrEmpty(tag) ? tag : "Untagged");
     }
 }

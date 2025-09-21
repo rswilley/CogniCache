@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Components;
+﻿using CogniCache.Domain.Extensions;
+using Microsoft.AspNetCore.Components;
 using System.Net;
 using System.Text;
 
@@ -7,7 +8,7 @@ namespace CogniCache.Shared.Services
     public interface INavigationService
     {
         void NavigateToTag(string tag);
-        void NavigateToMemo(int id);
+        void NavigateToMemo(int id, string title);
         void NavigateToMemos();
         void NavigateToMemos(Filter filter);
     }
@@ -16,19 +17,19 @@ namespace CogniCache.Shared.Services
     {
         public void NavigateToTag(string tag)
         {
-            var uri = "/memos/?tags=" + WebUtility.HtmlEncode(tag);
+            var uri = "/notes/?tag=" + WebUtility.HtmlEncode(tag);
             navigationManager.NavigateTo(uri);
         }
 
-        public void NavigateToMemo(int id)
+        public void NavigateToMemo(int id, string title)
         {
-            var uri = "/memos/" + id;
+            var uri = "/notes/" + id + "/" + title.ToSlug();
             navigationManager.NavigateTo(uri);
         }
 
         public void NavigateToMemos()
         {
-            navigationManager.NavigateTo("/memos");
+            navigationManager.NavigateTo("/notes");
         }
 
         public void NavigateToMemos(Filter filter)
@@ -43,7 +44,7 @@ namespace CogniCache.Shared.Services
                 queryStringBuilder.Append("&dateEnd=" + filter.DateEnd.Value.ToString("yyyy-MM-dd"));
             }
 
-            navigationManager.NavigateTo($"/memos/?{queryStringBuilder}");
+            navigationManager.NavigateTo($"/notes/?{queryStringBuilder}");
         }
     }
 
