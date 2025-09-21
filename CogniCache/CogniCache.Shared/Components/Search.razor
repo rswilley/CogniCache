@@ -1,43 +1,42 @@
 ﻿@using CogniCache.Domain.Repositories.SearchRepository
-@using CogniCache.Shared.Services
+@inject ISearchRepository _searchRepository;
 
-@inject ISearchRepository SearchRepository;
-@inject INavigationService NavigationService
-
-<Autocomplete TItem="SearchSnippet"
-              TValue="SearchSnippet"
-              Data="@_searchSnippetResults"
-              ReadData="@OnHandleReadData"
-              TextField="@(item => item.Title)"
-              ValueField="@(item => item)"
-              Placeholder="Search..."
-              HighlightSearch>
-    <NotFoundContent> Sorry... @context was not found! :( </NotFoundContent>
-    <ItemContent>
-        <Div Flex="Flex.InlineFlex.JustifyContent.Between">
-            <Heading Margin="Margin.Is2.FromBottom">@context.Value.Title</Heading>
-        </Div>
-        <Paragraph Margin="Margin.Is2.FromBottom">@context.Value.Snippet</Paragraph>
-    </ItemContent>
-</Autocomplete>
-
+<Addons>
+    <Addon AddonType="AddonType.Body">
+        <TextEdit Text="@_searchQuery" Placeholder="Search..." TextChanged="@OnSearchQueryChanged" />
+    </Addon>
+    <Addon AddonType="AddonType.End">
+        <AddonLabel>
+            <Icon Name="IconName.Search" />
+        </AddonLabel>
+    </Addon>
+</Addons>
 @code {
-    private IEnumerable<SearchSnippet> _searchSnippetResults = [];
+    [Parameter]
+    public EventCallback<IEnumerable<SearchSnippet>> OnSearchSnippetsReceived { get; set; }
 
-    private Task OnHandleReadData(AutocompleteReadDataEventArgs autocompleteReadDataEventArgs)
+    private string _searchQuery = string.Empty;
+
+    protected override async Task OnInitializedAsync()
     {
-        if (autocompleteReadDataEventArgs.CancellationToken.IsCancellationRequested)
-            return Task.CompletedTask;
-
-        var result = SearchRepository.Search(autocompleteReadDataEventArgs.SearchValue);
-        _searchSnippetResults = result.Snippets ?? [];
-        return Task.CompletedTask;
+        await base.OnInitializedAsync();
     }
 
-    private Task SelectedSearchSnippetChanged(SearchSnippet snippet)
+    private async Task OnSearchQueryChanged(string searchQuery)
     {
-        NavigationService.NavigateToMemo(snippet.NoteId);
-        //SelectedSearchSnippet = null;
-        return Task.CompletedTask;
+        _searchQuery = searchQuery;
+
+        if (_searchQuery.Length > 0)
+        {
+            var result = _searchRepository.Search(searchQuery);
+            if (result != null)
+            {
+                await OnSearchSnippetsReceived.InvokeAsync(result.Snippets);
+            }
+        }
+        else
+        {
+            await OnSearchSnippetsReceived.InvokeAsync(null);
+        }
     }
 }
